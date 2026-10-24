@@ -56,6 +56,14 @@ public partial class App : Application
                 Shutdown();
                 return;
             }
+            int glow = Array.IndexOf(e.Args, "--glow");
+            if (glow >= 0 && glow + 1 < e.Args.Length)
+            {
+                await Task.Delay(1200);
+                _popup.SaveGlowFrames(e.Args[glow + 1]);
+                Shutdown();
+                return;
+            }
             int snap = Array.IndexOf(e.Args, "--snap");
             if (snap >= 0 && snap + 1 < e.Args.Length)
             {

@@ -5,6 +5,10 @@ import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -205,17 +209,38 @@ fun RingCell(
 
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Box(Modifier.size(size), contentAlignment = Alignment.Center) {
+            // 충전 중이면 링 위로 빛이 천천히 한 바퀴 흐르고, 링 둘레가 숨 쉬듯 은은하게 빛난다
+            val glowOn = charging && LocalChargeGlow.current
+            val phase = if (glowOn) {
+                val t = rememberInfiniteTransition(label = "charge")
+                t.animateFloat(0f, 1f, infiniteRepeatable(tween(ChargeGlow.PERIOD_MS, easing = LinearEasing)), label = "phase").value
+            } else 0f
             Canvas(Modifier.size(size)) {
                 val w = stroke.toPx()
                 val inset = w / 2
                 val arcSize = androidx.compose.ui.geometry.Size(this.size.width - w, this.size.height - w)
                 val topLeft = androidx.compose.ui.geometry.Offset(inset, inset)
                 drawArc(track, 0f, 360f, false, topLeft, arcSize, style = Stroke(w))
+                val total = 360f * sweep
+                if (glowOn && sweep > 0.02f) {
+                    drawArc(
+                        color.copy(alpha = ChargeGlow.halo(phase) * known), -90f, total, false, topLeft, arcSize,
+                        style = Stroke(w * ChargeGlow.HALO_WIDTH, cap = StrokeCap.Round)
+                    )
+                }
                 if (sweep > 0.001f) {
                     drawArc(
-                        color.copy(alpha = known), -90f, 360f * sweep, false, topLeft, arcSize,
+                        color.copy(alpha = known), -90f, total, false, topLeft, arcSize,
                         style = Stroke(w, cap = StrokeCap.Round)
                     )
+                }
+                if (glowOn && sweep > 0.02f) {
+                    for ((from, len, a) in ChargeGlow.highlight(phase, total)) {
+                        drawArc(
+                            Color.White.copy(alpha = a * known), -90f + from, len, false, topLeft, arcSize,
+                            style = Stroke(w * 0.7f, cap = StrokeCap.Butt) // 조각끼리 겹쳐 얼룩지지 않게
+                        )
+                    }
                 }
             }
             // 링이 차오르는 동안 숫자도 함께 굴러간다

@@ -31,6 +31,7 @@ import org.robolectric.annotation.GraphicsMode
 class ScreenshotTest {
     private fun shot(name: String, state: AirPodsUiState) {
         captureRoboImage("build/screenshots/$name.png") {
+            androidx.compose.runtime.CompositionLocalProvider(me.kavishdevar.librepods.presentation.components.LocalChargeGlow provides false) {
             LibrePodsTheme(m3eEnabled = false) {
                 Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceContainer)) {
                     AirPodsSettingsScreen(
@@ -47,6 +48,7 @@ class ScreenshotTest {
                         activateDemoMode = {}, reconnectFromSavedMac = {},
                     )
                 }
+            }
             }
         }
     }

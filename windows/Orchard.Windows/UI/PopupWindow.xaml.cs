@@ -172,6 +172,17 @@ public partial class PopupWindow : Window
         BeginAnimation(ProgressProperty, a);
     }
 
+    /// <summary>확인용: 충전 빛을 진행값별로 찍는다.</summary>
+    public void SaveGlowFrames(string dir)
+    {
+        foreach (var ring in new[] { LeftRing, RightRing, CaseRing }) ring.BeginAnimation(BatteryRing.PhaseProperty, null);
+        for (int i = 0; i < 8; i++)
+        {
+            foreach (var ring in new[] { LeftRing, RightRing, CaseRing }) ring.Phase = i / 8.0;
+            SaveSnapshot(System.IO.Path.Combine(dir, $"glow_{i * 300:0000}.png"));
+        }
+    }
+
     /// <summary>확인용: 지금 모습을 PNG로 저장한다(진행값을 주면 그 순간의 움직임 프레임).</summary>
     public void SaveSnapshot(string path, double? progress = null)
     {
