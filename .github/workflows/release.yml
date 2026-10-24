@@ -1,0 +1,79 @@
+# 공개 저장소(FriedGrapes/orchard)에서 v* 태그가 올라오면 윈도우·안드로이드를 빌드해 Releases에 올린다.
+# 앱들은 이 Releases를 보고 스스로 업데이트한다.
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+      - name: 시험
+        run: dotnet test windows/Orchard.Core.Tests -c Release
+      - name: 버전
+        id: v
+        shell: bash
+        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+      - name: vpk 설치
+        run: dotnet tool install -g vpk --version 1.2.161
+      - name: 빌드·포장 (x64, arm64)
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -e
+          V=${{ steps.v.outputs.version }}
+          for RID in win-x64 win-arm64; do
+            CH=$([ "$RID" = win-x64 ] && echo win || echo win-arm64)
+            ARCH=${RID#win-}
+            # .NET 은 통째로 넣지 않고 설치할 때 없으면 받는다(설치 파일 82MB → 약 17MB)
+            dotnet publish windows/Orchard.Windows -c Release -r $RID --self-contained false -p:Version=$V -o publish/$RID
+            vpk download github --repoUrl https://github.com/${{ github.repository }} --channel $CH --token "$GITHUB_TOKEN" -o releases/$RID || true
+            vpk pack -u Orchard -v $V -p publish/$RID -e Orchard.exe --channel $CH --packTitle Orchard -r $RID \
+              -f net8.0-$ARCH-desktop --icon windows/Orchard.Windows/Assets/orchard.ico -o releases/$RID
+            vpk upload github --repoUrl https://github.com/${{ github.repository }} --channel $CH -o releases/$RID \
+              --publish --merge --releaseName "Orchard v$V" --tag v$V --token "$GITHUB_TOKEN"
+          done
+
+  android:
+    needs: windows
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: android-actions/setup-android@v3
+      - name: 서명 키
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          echo "$KEYSTORE_B64" | base64 -d > $RUNNER_TEMP/orchard.jks
+          cat > android/local.properties <<EOF
+          sdk.dir=$ANDROID_HOME
+          RELEASE_STORE_FILE=$RUNNER_TEMP/orchard.jks
+          RELEASE_STORE_PASSWORD=$KEY_PASSWORD
+          RELEASE_KEY_ALIAS=orchard
+          RELEASE_KEY_PASSWORD=$KEY_PASSWORD
+          EOF
+      - name: 시험·빌드
+        working-directory: android
+        run: ./gradlew --no-daemon testFossDebugUnitTest assembleFossRelease
+      - name: 올리기
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          V=${GITHUB_REF_NAME#v}
+          cp android/app/build/outputs/apk/foss/release/app-foss-release.apk Orchard-android_v$V.apk
+          gh release upload "$GITHUB_REF_NAME" "Orchard-android_v$V.apk" --repo ${{ github.repository }} --clobber

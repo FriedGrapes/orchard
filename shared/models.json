@@ -1,0 +1,18 @@
+{
+  "_about": "애플 블루투스 제품 번호(PID) = 근접 신호 3·4번째 바이트(작은 쪽 먼저) = 윈도우 장치 ID의 PID. 안드로이드 BLEManager는 바이트를 거꾸로 읽은 값(예: 0x202D → 0x2D20)을 쓴다. inferred=true는 실제 기기(2026-10-24, 사용자 기기)로 짐작한 것.",
+  "models": [
+    { "pid": "0x2002", "name": "AirPods", "kind": "earbuds", "anc": false },
+    { "pid": "0x200F", "name": "AirPods 2", "kind": "earbuds", "anc": false },
+    { "pid": "0x2013", "name": "AirPods 3", "kind": "earbuds", "anc": false },
+    { "pid": "0x2019", "name": "AirPods 4", "kind": "earbuds", "anc": false },
+    { "pid": "0x201B", "name": "AirPods 4 (ANC)", "kind": "earbuds", "anc": true },
+    { "pid": "0x2030", "name": "AirPods 5", "kind": "earbuds", "anc": true, "inferred": true },
+    { "pid": "0x200E", "name": "AirPods Pro", "kind": "earbuds", "anc": true },
+    { "pid": "0x2014", "name": "AirPods Pro 2", "kind": "earbuds", "anc": true },
+    { "pid": "0x2024", "name": "AirPods Pro 2 (USB-C)", "kind": "earbuds", "anc": true },
+    { "pid": "0x2027", "name": "AirPods Pro 3", "kind": "earbuds", "anc": true, "inferred": true },
+    { "pid": "0x200A", "name": "AirPods Max", "kind": "headphones", "anc": true, "a_numbers": ["A2096"] },
+    { "pid": "0x201F", "name": "AirPods Max (USB-C)", "kind": "headphones", "anc": true, "a_numbers": ["A3184"] },
+    { "pid": "0x202D", "name": "AirPods Max 2", "kind": "headphones", "anc": true, "inferred": true }
+  ]
+}

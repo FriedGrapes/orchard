@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Orchard: AirPods Max 그림 (직접 그린 벡터). 여백 없이 그림만 담아 카드에서 크게 보이게 한다. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="300dp" android:height="250dp"
+    android:viewportWidth="480" android:viewportHeight="400">
+
+    <!-- 머리띠 스테인리스 프레임(뒤) -->
+    <path android:pathData="M78,222 C70,40 410,40 402,222"
+        android:strokeWidth="11" android:strokeLineCap="round" android:strokeColor="#FFB9BEC6"/>
+    <path android:pathData="M78,222 C70,40 410,40 402,222"
+        android:strokeWidth="4" android:strokeLineCap="round" android:strokeColor="#FFE9ECF0"/>
+
+    <!-- 메시 캐노피 -->
+    <path android:pathData="M100,214 C96,74 384,74 380,214"
+        android:strokeWidth="40" android:strokeLineCap="round" android:strokeColor="#FF3B4049"/>
+    <path android:pathData="M100,214 C96,74 384,74 380,214"
+        android:strokeWidth="30" android:strokeLineCap="round" android:strokeColor="#FF555C67"/>
+    <path android:pathData="M100,214 C96,74 384,74 380,214"
+        android:strokeWidth="1.6" android:strokeColor="#40FFFFFF"/>
+    <path android:pathData="M108,212 C104,84 376,84 372,212"
+        android:strokeWidth="1.2" android:strokeColor="#28FFFFFF"/>
+    <path android:pathData="M92,216 C88,64 392,64 388,216"
+        android:strokeWidth="1.2" android:strokeColor="#28FFFFFF"/>
+
+    <!-- 왼쪽 컵 -->
+    <path android:pathData="M46,200 h96 a34,34 0 0 1 34,34 v112 a34,34 0 0 1 -34,34 h-96 a34,34 0 0 1 -34,-34 v-112 a34,34 0 0 1 34,-34 z">
+        <aapt:attr name="android:fillColor">
+            <gradient android:type="linear" android:startX="12" android:startY="200" android:endX="176" android:endY="380">
+                <item android:offset="0" android:color="#FFF4F5F7"/>
+                <item android:offset="0.55" android:color="#FFD9DCE1"/>
+                <item android:offset="1" android:color="#FFAEB3BB"/>
+            </gradient>
+        </aapt:attr>
+    </path>
+    <path android:pathData="M22,214 a30,30 0 0 1 22,-12 h20" android:strokeWidth="3" android:strokeColor="#B0FFFFFF" android:strokeLineCap="round"/>
+    <!-- 왼쪽 쿠션 -->
+    <path android:pathData="M160,222 h12 a14,14 0 0 1 14,14 v108 a14,14 0 0 1 -14,14 h-12 z" android:fillColor="#FF2F333A"/>
+
+    <!-- 오른쪽 컵 -->
+    <path android:pathData="M338,200 h96 a34,34 0 0 1 34,34 v112 a34,34 0 0 1 -34,34 h-96 a34,34 0 0 1 -34,-34 v-112 a34,34 0 0 1 34,-34 z">
+        <aapt:attr name="android:fillColor">
+            <gradient android:type="linear" android:startX="304" android:startY="200" android:endX="468" android:endY="380">
+                <item android:offset="0" android:color="#FFF4F5F7"/>
+                <item android:offset="0.55" android:color="#FFD9DCE1"/>
+                <item android:offset="1" android:color="#FFAEB3BB"/>
+            </gradient>
+        </aapt:attr>
+    </path>
+    <path android:pathData="M314,214 a30,30 0 0 1 22,-12 h20" android:strokeWidth="3" android:strokeColor="#B0FFFFFF" android:strokeLineCap="round"/>
+    <!-- 오른쪽 쿠션 -->
+    <path android:pathData="M320,222 h-12 a14,14 0 0 0 -14,14 v108 a14,14 0 0 0 14,14 h12 z" android:fillColor="#FF2F333A"/>
+
+    <!-- 디지털 크라운·소음 제어 버튼 -->
+    <path android:pathData="M412,184 h26 a7,7 0 0 1 7,7 v11 h-40 v-11 a7,7 0 0 1 7,-7 z" android:fillColor="#FFCDD1D7"/>
+    <path android:pathData="M366,190 h26 v12 h-26 z" android:fillColor="#FFCDD1D7"/>
+</vector>
