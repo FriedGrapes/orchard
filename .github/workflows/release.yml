@@ -5,12 +5,19 @@ name: release
 on:
   push:
     tags: ["v*"]
+  # 이미 나온 릴리스에 안드로이드만 다시 빌드해 붙일 때(예: 안드로이드 빌드만 실패했을 때)
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "붙일 릴리스 태그 (예: v0.1.0)"
+        required: true
 
 permissions:
   contents: write
 
 jobs:
   windows:
+    if: github.event_name == 'push'
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -46,7 +53,10 @@ jobs:
 
   android:
     needs: windows
+    if: ${{ !cancelled() && (needs.windows.result == 'success' || needs.windows.result == 'skipped') }}
     runs-on: ubuntu-latest
+    env:
+      TAG: ${{ inputs.tag || github.ref_name }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -54,6 +64,9 @@ jobs:
           distribution: temurin
           java-version: "21"
       - uses: android-actions/setup-android@v3
+        with:
+          # 기본값('tools')은 없어진 꾸러미라 설치에 실패한다
+          packages: "platform-tools"
       - name: 서명 키
         env:
           KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
@@ -74,6 +87,6 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          V=${GITHUB_REF_NAME#v}
+          V=${TAG#v}
           cp android/app/build/outputs/apk/foss/release/app-foss-release.apk Orchard-android_v$V.apk
-          gh release upload "$GITHUB_REF_NAME" "Orchard-android_v$V.apk" --repo ${{ github.repository }} --clobber
+          gh release upload "$TAG" "Orchard-android_v$V.apk" --repo ${{ github.repository }} --clobber

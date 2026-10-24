@@ -2,7 +2,8 @@
 # 모노레포의 커밋 기록은 올리지 않는다(예전 커밋에 있던 재배포 불가 파일이 기록으로 새지 않게).
 # 태그가 올라가면 공개 저장소의 GitHub Actions(release.yml)가 윈도우·안드로이드를 빌드해 Releases에 올린다.
 #   사용: powershell -File Orchard/tools/publish.ps1 -Version 0.1.0
-param([Parameter(Mandatory)] [string] $Version)
+#   태그 없이 소스만 고쳐 올리기(배포 설정만 고칠 때): -NoTag
+param([Parameter(Mandatory)] [string] $Version, [switch] $NoTag)
 $ErrorActionPreference = 'Stop'
 $repo = (git rev-parse --show-toplevel).Trim()
 $work = Join-Path $env:TEMP "orchard-publish-$Version"
@@ -17,8 +18,11 @@ tar -xf $tar -C $work
 Remove-Item $tar
 
 git -C $work add -A
-git -C $work commit --quiet -m "Orchard v$Version"
-git -C $work tag "v$Version"
+$msg = if ($NoTag) { "Orchard v$Version (build config fix)" } else { "Orchard v$Version" }
+git -C $work commit --quiet -m $msg
 git -C $work push --quiet origin HEAD:main
-git -C $work push --quiet origin "v$Version"
+if (-not $NoTag) {
+    git -C $work tag "v$Version"
+    git -C $work push --quiet origin "v$Version"
+}
 Write-Host "공개 저장소에 v$Version 을 올렸어요. 빌드: https://github.com/FriedGrapes/orchard/actions"
