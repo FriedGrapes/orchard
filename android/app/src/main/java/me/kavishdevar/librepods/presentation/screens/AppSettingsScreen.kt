@@ -310,6 +310,12 @@ fun AppSettingsScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
+            // Orchard: 앱 업데이트(GitHub에서 직접 받는 판만 — 플레이 스토어 판은 스토어가 업데이트)
+            if (!me.kavishdevar.librepods.BuildConfig.PLAY_BUILD) {
+                me.kavishdevar.librepods.update.UpdateSettingsSection()
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+
             StyledList(title = stringResource(R.string.takeover_airpods_state)) {
                 StyledToggle(
                     label = stringResource(R.string.takeover_disconnected),

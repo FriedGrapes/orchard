@@ -293,4 +293,13 @@
     <string name="orchard_taking_over">에어팟을 이 폰으로 가져오는 중…</string>
     <string name="orchard_find">에어팟 찾기</string>
     <string name="orchard_find_desc">마지막으로 함께 있던 곳 · 근처에서 찾기</string>
+    <string name="orchard_update_title">앱 업데이트</string>
+    <string name="orchard_update_auto">자동으로 업데이트</string>
+    <string name="orchard_update_auto_desc">12시간마다 새 버전을 확인해서 설치해요.</string>
+    <string name="orchard_update_check_now">지금 업데이트 확인</string>
+    <string name="orchard_update_current">지금 버전 v%1$s</string>
+    <string name="orchard_update_checking">확인하는 중</string>
+    <string name="orchard_update_latest">최신 버전이에요 (v%1$s)</string>
+    <string name="orchard_update_installing">v%1$s 받음 · 알림을 눌러 설치</string>
+    <string name="orchard_update_failed">확인하지 못했어요. 인터넷 연결을 확인하고 다시 눌러 주세요.</string>
 </resources>

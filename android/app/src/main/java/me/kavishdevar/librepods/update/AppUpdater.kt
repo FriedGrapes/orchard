@@ -36,6 +36,16 @@ object AppUpdater {
 
     @Volatile private var running = false
 
+    /** '지금 업데이트 확인' 결과. */
+    sealed interface CheckResult {
+        data class UpToDate(val current: String) : CheckResult
+        data class Installing(val version: String) : CheckResult
+        data object Busy : CheckResult
+        data object Failed : CheckResult
+    }
+
+    val currentVersion: String get() = BuildConfig.VERSION_NAME.substringBefore('-')
+
     fun schedule(context: Context, scope: CoroutineScope) {
         if (BuildConfig.PLAY_BUILD) return
         scope.launch {
@@ -52,20 +62,21 @@ object AppUpdater {
         }
     }
 
-    /** 확인하고, 새 버전이면 내려받아 설치를 시작한다. 반환: 찾은 새 버전(없으면 null). */
-    fun checkNow(context: Context): String? {
-        if (running) return null
+    /** 확인하고, 새 버전이면 내려받아 설치를 시작한다(네트워크를 쓰니 IO 스레드에서 부른다). */
+    fun checkNow(context: Context): CheckResult {
+        if (running) return CheckResult.Busy
         running = true
         try {
-            val release = fetch(LATEST)?.let(UpdateLogic::parseRelease) ?: return null
-            if (!UpdateLogic.isNewer(release.version, BuildConfig.VERSION_NAME)) return null
+            val json = fetch(LATEST) ?: return CheckResult.Failed
+            val release = UpdateLogic.parseRelease(json) ?: return CheckResult.UpToDate(currentVersion)
+            if (!UpdateLogic.isNewer(release.version, BuildConfig.VERSION_NAME)) return CheckResult.UpToDate(currentVersion)
             Log.i(TAG, "New version ${release.version}, downloading")
-            val apk = download(context, release) ?: return null
+            val apk = download(context, release) ?: return CheckResult.Failed
             install(context, apk, release.version)
-            return release.version
+            return CheckResult.Installing(release.version)
         } catch (e: Exception) {
             Log.w(TAG, "Update check failed", e)
-            return null
+            return CheckResult.Failed
         } finally {
             running = false
         }
