@@ -398,7 +398,11 @@ class AACPManager {
     }
 
     @OptIn(ExperimentalStdlibApi::class)
-    fun receivePacket(packet: ByteArray) {
+    private val assembler = PacketAssembler()
+
+    fun receivePacket(chunk: ByteArray) {
+        // Orchard: 조각난 머리 통로 패킷은 이어 붙인 뒤 처리한다
+        val packet = assembler.feed(chunk) ?: return
         if (!packet.toHexString().startsWith("04000400")) {
             Log.w(
                 TAG, "Received packet does not start with expected header: ${
@@ -484,6 +488,11 @@ class AACPManager {
             }
 
             Opcodes.HEADTRACKING -> {
+                // Orchard: 연결 때 오는 설명서에서 머리 센서 통로 번호를 배운다(AirPods 5 = 15, AirPods 4 = 16)
+                HeadTrackingStream.motionStreamId(packet)?.let {
+                    if (motionStreamId != it) Log.d(TAG, "Head tracking motion stream: $it")
+                    motionStreamId = it
+                }
                 if (packet.size < 70) {
                     Log.w(
                         TAG, "Received HEADTRACKING packet too short: ${
@@ -662,7 +671,11 @@ class AACPManager {
         return sendDataPacket(createStartHeadTrackingPacket())
     }
 
+    /** Orchard: 에어팟이 알려 준 머리 센서 통로 번호(모르면 null → 원본 고정 요청). */
+    @Volatile var motionStreamId: Int? = null
+
     fun createStartHeadTrackingPacket(): ByteArray {
+        motionStreamId?.let { return HeadTrackingStream.startPacket(it) }
         val opcode = byteArrayOf(Opcodes.HEADTRACKING, 0x00)
         val data = byteArrayOf(
             0x00,
@@ -692,6 +705,7 @@ class AACPManager {
     }
 
     fun createAlternateStartHeadTrackingPacket(): ByteArray {
+        motionStreamId?.let { return HeadTrackingStream.startPacket(it) }
         val opcode = byteArrayOf(Opcodes.HEADTRACKING, 0x00)
         val data = byteArrayOf(
             0x00,
@@ -724,6 +738,7 @@ class AACPManager {
     }
 
     fun createStopHeadTrackingPacket(): ByteArray {
+        motionStreamId?.let { return HeadTrackingStream.stopPacket(it) }
         val opcode = byteArrayOf(Opcodes.HEADTRACKING, 0x00)
         val data = byteArrayOf(
             0x00,
@@ -754,6 +769,7 @@ class AACPManager {
     }
 
     fun createAlternateStopHeadTrackingPacket(): ByteArray {
+        motionStreamId?.let { return HeadTrackingStream.stopPacket(it) }
         val opcode = byteArrayOf(Opcodes.HEADTRACKING, 0x00)
         val data = byteArrayOf(
             0x00,
@@ -1274,6 +1290,7 @@ class AACPManager {
         controlCommandStatusList.clear()
         controlCommandListeners.clear()
         owns = false
+        motionStreamId = null // Orchard: 다른 에어팟이 붙으면 다시 배운다
         oldConnectedDevices = listOf()
         connectedDevices = listOf()
         audioSource = null

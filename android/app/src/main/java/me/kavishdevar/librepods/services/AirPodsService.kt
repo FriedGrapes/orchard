@@ -399,6 +399,20 @@ class AirPodsService : Service(), SharedPreferences.OnSharedPreferenceChangeList
         // Orchard: 5~10초 안에 startForeground 를 못 부르면 시스템이 앱을 강제 종료한다.
         startForegroundNotification()
         me.kavishdevar.librepods.update.AppUpdater.schedule(this, serviceScope)
+        // Orchard(테스트 빌드 전용): PC에서 adb 로 에어팟에 패킷을 직접 보내 새 모델의 프로토콜을 실험한다.
+        //   adb shell am broadcast -a app.orchard.android.DEBUG_AACP --es data "17 00 00 00 10 00 …"   (데이터 패킷)
+        //   adb shell am broadcast -a app.orchard.android.DEBUG_AACP --es raw  "04 00 04 00 …"          (통째로)
+        if (me.kavishdevar.librepods.BuildConfig.DEBUG) {
+            val debugReceiver = object : BroadcastReceiver() {
+                override fun onReceive(c: Context?, i: Intent?) {
+                    fun bytes(h: String) = h.trim().split(' ').filter { it.isNotEmpty() }
+                        .map { it.toInt(16).toByte() }.toByteArray()
+                    i?.getStringExtra("data")?.let { Log.d(TAG, "DEBUG send data: $it"); aacpManager.sendDataPacket(bytes(it)) }
+                    i?.getStringExtra("raw")?.let { Log.d(TAG, "DEBUG send raw: $it"); aacpManager.sendPacket(bytes(it)) }
+                }
+            }
+            registerReceiver(debugReceiver, IntentFilter("app.orchard.android.DEBUG_AACP"), RECEIVER_EXPORTED)
+        }
 
         localMac = config.selfMacAddress
         if (localMac.isEmpty()) {
