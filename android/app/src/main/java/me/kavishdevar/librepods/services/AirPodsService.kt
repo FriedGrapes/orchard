@@ -105,7 +105,7 @@ import me.kavishdevar.librepods.data.XposedRemotePrefProvider
 import me.kavishdevar.librepods.data.isHeadTrackingData
 import me.kavishdevar.librepods.presentation.overlays.IslandType
 import me.kavishdevar.librepods.presentation.overlays.IslandWindow
-import me.kavishdevar.librepods.presentation.overlays.PopupWindow
+import me.kavishdevar.librepods.presentation.overlays.LidCardWindow
 import me.kavishdevar.librepods.presentation.widgets.BatteryWidget
 import me.kavishdevar.librepods.presentation.widgets.NoiseControlWidget
 import me.kavishdevar.librepods.utils.GestureDetector
@@ -319,6 +319,7 @@ class AirPodsService : Service(), SharedPreferences.OnSharedPreferenceChangeList
                 sendBatteryBroadcast()
             } else {
                 Log.d(TAG, "Lid closed")
+                hidePopup()
             }
         }
 
@@ -1693,6 +1694,8 @@ class AirPodsService : Service(), SharedPreferences.OnSharedPreferenceChangeList
 
 
     var popupShown = false
+    /** Orchard: 뚜껑을 열면 화면 위에서 내려오는 검정 배터리 카드(예전 아래쪽 팝업 대신). */
+    private var lidCard: LidCardWindow? = null
     fun showPopup(service: Service, name: String) {
         if (!sharedPreferences.getBoolean("show_bottom_sheet_popup", true)) {
             return
@@ -1701,12 +1704,18 @@ class AirPodsService : Service(), SharedPreferences.OnSharedPreferenceChangeList
             Log.d(TAG, "No permission for SYSTEM_ALERT_WINDOW")
             return
         }
-        if (popupShown) {
-            return
+        val model = airpodsInstance?.model
+            ?: AirPodsModels.resolve(config.airpodsModelNumber, config.airpodsName)
+        Handler(Looper.getMainLooper()).post {
+            val card = lidCard ?: LidCardWindow(service.applicationContext) { startMainActivity() }.also { lidCard = it }
+            card.show(name, model, batteryNotification.getBattery())
         }
-        val popupWindow = PopupWindow(service.applicationContext)
-        popupWindow.open(name, batteryNotification)
         popupShown = true
+    }
+
+    /** 뚜껑을 닫으면 카드도 닫는다. */
+    fun hidePopup() {
+        Handler(Looper.getMainLooper()).post { lidCard?.dismiss() }
     }
 
     var islandOpen = false
@@ -1724,6 +1733,8 @@ class AirPodsService : Service(), SharedPreferences.OnSharedPreferenceChangeList
         if (!sharedPreferences.getBoolean("show_island_popup", true)) {
             return
         }
+        // Orchard: 뚜껑 카드가 떠 있으면 '연결됨' 알림을 겹쳐 띄우지 않는다(카드가 배터리를 바로 보여 준다)
+        if (type == IslandType.CONNECTED && lidCard?.isShowing == true) return
         if (!Settings.canDrawOverlays(service)) {
             Log.d(TAG, "No permission for SYSTEM_ALERT_WINDOW")
             return

@@ -42,8 +42,20 @@ public partial class App : Application
             int id = demo + 1 < e.Args.Length ? Convert.ToInt32(e.Args[demo + 1], 16) : 0x2027;
             var bytes = new byte[] { 0x07, 0x19, 0x01, (byte)(id & 0xFF), (byte)(id >> 8), 0x2A, 0x86, 0x57, 0x00, 0x00, 0x05 };
             var s = ProximityParser.Parse(bytes)!;
-            _popup.Render(s, new PairedDevice("", id, ""), connected: true);
-            _popup.ShowAnimated();
+            bool lid = e.Args.Contains("--lid");
+            _popup.Render(s, new PairedDevice("", id, ""), connected: !lid);
+            _popup.ShowAnimated(fromLid: lid);
+            // --frames <폴더>: 등장 움직임을 진행값별로 찍는다(완성 모습은 --snap)
+            int frames = Array.IndexOf(e.Args, "--frames");
+            if (frames >= 0 && frames + 1 < e.Args.Length)
+            {
+                await Task.Delay(1200);
+                var ease = new System.Windows.Media.Animation.BackEase { EasingMode = System.Windows.Media.Animation.EasingMode.EaseOut, Amplitude = 0.35 };
+                foreach (var t in new[] { 0.0, 0.1, 0.2, 0.35, 0.5, 0.7, 1.0 })
+                    _popup.SaveSnapshot(System.IO.Path.Combine(e.Args[frames + 1], $"in_{(int)(t * 460):0000}.png"), ease.Ease(t));
+                Shutdown();
+                return;
+            }
             int snap = Array.IndexOf(e.Args, "--snap");
             if (snap >= 0 && snap + 1 < e.Args.Length)
             {
@@ -165,7 +177,9 @@ public partial class App : Application
 
         // 케이스를 연 순간(또는 처음 보인 순간 뚜껑이 열려 있으면) 팝업
         bool lidJustOpened = s is { LidOpen: true } && !s.Model.IsHeadphones && (_prev == null || !_prev.LidOpen || _prev.ModelId != s.ModelId);
-        if (_settings.PopupOnLidOpen && lidJustOpened && !(s!.AnyInEar)) _popup?.ShowAnimated();
+        if (_settings.PopupOnLidOpen && lidJustOpened && !(s!.AnyInEar)) _popup?.ShowAnimated(fromLid: true);
+        // 뚜껑을 닫으면(또는 신호가 끊기면) 뚜껑 카드도 들어간다
+        if (_popup is { ShownByLid: true } && (s == null || !s.LidOpen || s.AnyInEar)) _popup.HideAnimated();
         if (connected && !_wasConnected) Log.Write($"연결됨: {owner?.Name}");
 
         _wasConnected = connected;

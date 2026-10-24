@@ -26,7 +26,8 @@ git -C $work config core.autocrlf false; Run "autocrlf off"
 Get-ChildItem $work -Force | Where-Object Name -ne '.git' | Remove-Item -Recurse -Force
 $tar = Join-Path $env:TEMP "orchard-$Version.tar"
 git -c core.autocrlf=false -C $repo archive --format=tar -o $tar "HEAD:Orchard"; Run "archive"
-tar -xf $tar -C $work; Run "extract"
+# bash 에서 부르면 git 의 tar 가 잡혀 C:\ 경로를 원격 주소로 읽고 실패한다 → 윈도우 tar 를 콕 집어 쓴다
+& "$env:SystemRoot\System32\tar.exe" -xf $tar -C $work; Run "extract"
 Remove-Item $tar
 
 # 윈도우에서 풀면 실행 권한이 빠지므로 git 에 직접 표시한다

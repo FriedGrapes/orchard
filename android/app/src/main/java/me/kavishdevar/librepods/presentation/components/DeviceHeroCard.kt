@@ -36,6 +36,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.takeOrElse
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -200,6 +201,9 @@ fun RingCell(
     size: Dp = 60.dp,
     stroke: Dp = 5.5.dp,
     delayMs: Long = 0,
+    textColor: Color = Color.Unspecified,
+    trackColor: Color = Color.Unspecified,
+    labelSize: Int = 13,
 ) {
     val dark = isSystemInDarkTheme()
     val target = (level ?: 0).coerceIn(0, 100) / 100f
@@ -217,7 +221,8 @@ fun RingCell(
         target > 0.1f -> Color(0xFFFFCC00)
         else -> Color(0xFFFF3B30)
     }
-    val track = if (dark) Color.White.copy(alpha = 0.12f) else Color.Black.copy(alpha = 0.08f)
+    val track = trackColor.takeOrElse { if (dark) Color.White.copy(alpha = 0.12f) else Color.Black.copy(alpha = 0.08f) }
+    val fg = textColor.takeOrElse { MaterialTheme.colorScheme.onSurface }
 
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Box(Modifier.size(size), contentAlignment = Alignment.Center) {
@@ -245,7 +250,7 @@ fun RingCell(
                 style = TextStyle(
                     fontFamily = OrchardFont, fontWeight = FontWeight.SemiBold,
                     fontSize = if (size > 70.dp) 18.sp else 14.sp,
-                    color = MaterialTheme.colorScheme.onSurface
+                    color = fg
                 )
             )
         }
@@ -253,8 +258,8 @@ fun RingCell(
         Text(
             text = label,
             style = TextStyle(
-                fontFamily = OrchardFont, fontSize = 13.sp,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                fontFamily = OrchardFont, fontSize = labelSize.sp,
+                color = fg.copy(alpha = 0.6f)
             )
         )
     }

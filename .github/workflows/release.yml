@@ -1,5 +1,6 @@
 # 공개 저장소(FriedGrapes/orchard)에서 v* 태그가 올라오면 윈도우·안드로이드를 빌드해 Releases에 올린다.
 # 앱들은 이 Releases를 보고 스스로 업데이트한다.
+# 빠르게: 릴리스 틀을 먼저 만들고 윈도우(x64·ARM)·안드로이드를 동시에 빌드한다. 시험은 모노레포에서 이미 돈다.
 name: release
 
 on:
@@ -15,48 +16,56 @@ on:
 permissions:
   contents: write
 
+env:
+  TAG: ${{ inputs.tag || github.ref_name }}
+
 jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 릴리스 틀 만들기
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release view "$TAG" --repo ${{ github.repository }} >/dev/null 2>&1 || \
+            gh release create "$TAG" --repo ${{ github.repository }} --title "Orchard ${TAG}" --notes "Orchard ${TAG}"
+
   windows:
+    needs: release
     if: github.event_name == 'push'
     runs-on: windows-latest
+    strategy:
+      matrix:
+        rid: [win-x64, win-arm64]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: "8.0.x"
-      - name: 시험
-        run: dotnet test windows/Orchard.Core.Tests -c Release
-      - name: 버전
-        id: v
-        shell: bash
-        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+          cache: false
       - name: vpk 설치
         run: dotnet tool install -g vpk --version 1.2.161
-      - name: 빌드·포장 (x64, arm64)
+      - name: 빌드·포장
         shell: bash
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RID: ${{ matrix.rid }}
         run: |
           set -e
-          V=${{ steps.v.outputs.version }}
-          for RID in win-x64 win-arm64; do
-            CH=$([ "$RID" = win-x64 ] && echo win || echo win-arm64)
-            ARCH=${RID#win-}
-            # .NET 은 통째로 넣지 않고 설치할 때 없으면 받는다(설치 파일 82MB → 약 17MB)
-            dotnet publish windows/Orchard.Windows -c Release -r $RID --self-contained false -p:Version=$V -o publish/$RID
-            vpk download github --repoUrl https://github.com/${{ github.repository }} --channel $CH --token "$GITHUB_TOKEN" -o releases/$RID || true
-            vpk pack -u Orchard -v $V -p publish/$RID -e Orchard.exe --channel $CH --packTitle Orchard -r $RID \
-              -f net8.0-$ARCH-desktop --icon windows/Orchard.Windows/Assets/orchard.ico -o releases/$RID
-            vpk upload github --repoUrl https://github.com/${{ github.repository }} --channel $CH -o releases/$RID \
-              --publish --merge --releaseName "Orchard v$V" --tag v$V --token "$GITHUB_TOKEN"
-          done
+          V=${TAG#v}
+          CH=$([ "$RID" = win-x64 ] && echo win || echo win-arm64)
+          ARCH=${RID#win-}
+          # .NET 은 통째로 넣지 않고 설치할 때 없으면 받는다(설치 파일 82MB → 약 17MB)
+          dotnet publish windows/Orchard.Windows -c Release -r $RID --self-contained false -p:Version=$V -o publish
+          vpk download github --repoUrl https://github.com/${{ github.repository }} --channel $CH --token "$GITHUB_TOKEN" -o releases || true
+          vpk pack -u Orchard -v $V -p publish -e Orchard.exe --channel $CH --packTitle Orchard -r $RID \
+            -f net8.0-$ARCH-desktop --icon windows/Orchard.Windows/Assets/orchard.ico -o releases
+          vpk upload github --repoUrl https://github.com/${{ github.repository }} --channel $CH -o releases \
+            --publish --merge --releaseName "Orchard v$V" --tag v$V --token "$GITHUB_TOKEN"
 
   android:
-    needs: windows
-    if: ${{ !cancelled() && (needs.windows.result == 'success' || needs.windows.result == 'skipped') }}
+    needs: release
     runs-on: ubuntu-latest
-    env:
-      TAG: ${{ inputs.tag || github.ref_name }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -67,6 +76,8 @@ jobs:
         with:
           # 기본값('tools')은 없어진 꾸러미라 설치에 실패한다
           packages: "platform-tools"
+      # 빌드 재료(Gradle 꾸러미·빌드 캐시)를 다음 배포에 다시 쓴다
+      - uses: gradle/actions/setup-gradle@v4
       - name: 서명 키
         env:
           KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
@@ -83,9 +94,9 @@ jobs:
           RELEASE_KEY_PASSWORD=$PW
           EOF
           keytool -list -keystore $RUNNER_TEMP/orchard.jks -storepass "$PW" -alias orchard > /dev/null && echo "서명 키 확인됨"
-      - name: 시험·빌드
+      - name: 빌드
         working-directory: android
-        run: bash ./gradlew --no-daemon testFossDebugUnitTest assembleFossRelease
+        run: bash ./gradlew --build-cache --parallel assembleFossRelease
       - name: 올리기
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

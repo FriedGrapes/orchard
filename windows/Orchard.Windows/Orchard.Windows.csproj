@@ -30,6 +30,7 @@
   <ItemGroup>
     <Resource Include="Assets\**\*.png" />
     <Resource Include="Assets\orchard.ico" />
+    <Resource Include="Assets\fonts\*.otf" />
   </ItemGroup>
 
 </Project>

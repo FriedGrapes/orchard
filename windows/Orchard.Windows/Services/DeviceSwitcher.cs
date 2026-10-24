@@ -77,14 +77,13 @@ public sealed class DeviceSwitcher
             return;
         }
         Log.Write($"자동 전환: {session.SourceAppUserModelId} 재생 → {target.Name} 가져오기");
-        // 스피커로 소리가 새지 않게 잠깐 멈췄다가, 연결되면 이어서 재생
+        // 스피커로 소리가 새지 않게: 스피커를 음소거하고 재생도 멈췄다가, 에어팟이 연결되면 이어서 재생한다.
+        // (일시정지를 무시하는 앱이 있어도 음소거 덕분에 스피커로는 나오지 않는다. 실패해도 끝나면 음소거를 푼다)
+        using var guard = SpeakerGuard.Engage();
         bool paused = await session.TryPauseAsync();
         bool ok = await TakeOverAsync(target);
-        if (paused)
-        {
-            if (ok) await Task.Delay(600); // 윈도우가 기본 출력을 에어팟으로 바꿀 시간
-            await session.TryPlayAsync();
-        }
+        if (ok) await Task.Delay(600); // 윈도우가 기본 출력을 에어팟으로 바꿀 시간
+        if (paused) await session.TryPlayAsync();
     }
 
     /// <summary>에어팟을 이 PC로 가져온다. 연결되면 true.</summary>

@@ -1,50 +1,49 @@
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
+using System.Windows.Threading;
 using Orchard.Core;
 
 namespace Orchard.Windows;
 
+/// <summary>
+/// 배터리 카드. 트레이에서 열면 아래에 버전·업데이트 줄이 붙고, 뚜껑을 열어 뜬 카드는 포커스를 뺏지 않고
+/// 뚜껑을 닫거나 10초가 지나면 저절로 들어간다(안드로이드 LidCard 와 같은 동작).
+/// </summary>
 public partial class PopupWindow : Window
 {
     readonly Updater _updater;
+    readonly DispatcherTimer _autoClose = new() { Interval = TimeSpan.FromSeconds(10) };
     bool _hiding;
     int? _shownModel;
+
+    /// <summary>뚜껑을 열어서 뜬 카드인지(뚜껑을 닫으면 이것만 닫는다).</summary>
+    public bool ShownByLid { get; private set; }
 
     /// <summary>'이 PC로 가져오기'를 눌렀을 때.</summary>
     public event Action? TakeOverRequested;
 
+    // 0 = 숨음, 1 = 제자리. 이 값 하나로 위치·크기·투명도를 함께 움직인다(확인용 프레임도 이 값으로 찍는다).
+    public static readonly DependencyProperty ProgressProperty = DependencyProperty.Register(
+        nameof(Progress), typeof(double), typeof(PopupWindow),
+        new PropertyMetadata(1.0, (d, _) => ((PopupWindow)d).ApplyProgress()));
+    public double Progress { get => (double)GetValue(ProgressProperty); set => SetValue(ProgressProperty, value); }
+
     void TakeBtn_Click(object sender, RoutedEventArgs e) => TakeOverRequested?.Invoke();
+    void CloseBtn_Click(object sender, RoutedEventArgs e) => HideAnimated();
+    void UpdateBtn_Click(object sender, RoutedEventArgs e) => _updater.ApplyAndRestart();
 
     public PopupWindow(Updater updater)
     {
         _updater = updater;
         InitializeComponent();
-        ApplyTheme();
         VersionText.Text = $"Orchard v{updater.CurrentVersion}";
-        updater.StateChanged += () => Dispatcher.Invoke(RefreshUpdate);
-        SourceInitialized += (_, _) =>
-        {
-            if (Backdrop.Apply(this, Backdrop.IsDark)) Background = Brushes.Transparent;
-        };
-        Deactivated += (_, _) => HideAnimated();
-        Microsoft.Win32.SystemEvents.UserPreferenceChanged += (_, _) => Dispatcher.Invoke(ApplyTheme);
-    }
-
-    void ApplyTheme()
-    {
-        bool dark = Backdrop.IsDark;
-        Color C(byte a, byte r, byte g, byte b) => Color.FromArgb(a, r, g, b);
-        void Set(string k, Color c) => Resources[k] = new SolidColorBrush(c);
-        Set("WindowBg", dark ? C(255, 32, 32, 34) : C(255, 246, 246, 248));
-        Set("Fg", dark ? C(255, 245, 245, 247) : C(255, 28, 28, 30));
-        Set("Fg2", dark ? C(170, 235, 235, 245) : C(160, 60, 60, 67));
-        Set("Fg3", dark ? C(110, 235, 235, 245) : C(110, 60, 60, 67));
-        Set("Line", dark ? C(28, 255, 255, 255) : C(20, 0, 0, 0));
-        Set("Chip", dark ? C(30, 255, 255, 255) : C(16, 0, 0, 0));
-        Set("Accent", dark ? C(255, 64, 210, 140) : C(255, 22, 140, 85));
-        var track = new SolidColorBrush(dark ? C(36, 255, 255, 255) : C(24, 0, 0, 0));
+        var track = (Brush)Resources["Track"];
         LeftRing.TrackBrush = RightRing.TrackBrush = CaseRing.TrackBrush = track;
+        updater.StateChanged += () => Dispatcher.Invoke(RefreshUpdate);
+        Root.SizeChanged += (_, _) => Card.Data = ContinuousCorners.Rect(Root.ActualWidth, Root.ActualHeight, 30);
+        Deactivated += (_, _) => { if (!ShownByLid) HideAnimated(); };
+        _autoClose.Tick += (_, _) => { _autoClose.Stop(); if (ShownByLid && !IsMouseOver) HideAnimated(); else if (ShownByLid) _autoClose.Start(); };
     }
 
     void RefreshUpdate()
@@ -54,8 +53,6 @@ public partial class PopupWindow : Window
         if (v != null) UpdateText.Text = $"v{v}로 업데이트";
     }
 
-    void UpdateBtn_Click(object sender, RoutedEventArgs e) => _updater.ApplyAndRestart();
-
     public void Render(AirPodsStatus? s, PairedDevice? owner, bool connected)
     {
         // 근처에 보이는데 이 PC와 연결 안 됐으면 가져오기 버튼
@@ -63,8 +60,7 @@ public partial class PopupWindow : Window
         if (s == null)
         {
             NameText.Text = owner?.Name ?? "Orchard";
-            SubText.Text = connected ? "연결됨 · 배터리 정보를 기다리는 중" : "에어팟을 찾는 중";
-            StateDot.Fill = connected ? (Brush)Resources["Accent"] : (Brush)Resources["Fg3"];
+            HintText.Text = connected ? "연결됨 · 배터리 정보를 기다리는 중" : "케이스를 열거나 귀에 꽂으면 바로 나타나요";
             HintText.Visibility = Visibility.Visible;
             Rings.Visibility = Visibility.Collapsed;
             if (owner != null) SetArt(owner.Model); else ArtRow.Visibility = Visibility.Collapsed;
@@ -73,8 +69,6 @@ public partial class PopupWindow : Window
 
         var m = s.Model;
         NameText.Text = owner?.Name is { Length: > 0 } n ? n : m.Name;
-        SubText.Text = (owner?.Name is { Length: > 0 } ? m.Name + " · " : "") + (connected ? "연결됨" : "근처에 있음");
-        StateDot.Fill = connected ? (Brush)Resources["Accent"] : (Brush)Resources["Fg3"];
         HintText.Visibility = Visibility.Collapsed;
         Rings.Visibility = Visibility.Visible;
         SetArt(m);
@@ -83,15 +77,16 @@ public partial class PopupWindow : Window
         {
             RightCell.Visibility = CaseCell.Visibility = Visibility.Collapsed;
             Rings.Columns = 1;
-            LeftLabel.Text = s.AnyInEar ? "착용 중" : "배터리";
-            Ring(LeftRing, LeftPct, s.Headphones, s.LeftCharging || s.RightCharging);
+            bool ch = s.LeftCharging || s.RightCharging;
+            LeftLabel.Text = ch ? "충전 중" : "배터리";
+            Ring(LeftRing, LeftPct, s.Headphones, ch);
         }
         else
         {
             RightCell.Visibility = CaseCell.Visibility = Visibility.Visible;
             Rings.Columns = 3;
-            LeftLabel.Text = s.LeftInEar ? "왼쪽 · 착용" : "왼쪽";
-            RightLabel.Text = s.RightInEar ? "오른쪽 · 착용" : "오른쪽";
+            LeftLabel.Text = "왼쪽";
+            RightLabel.Text = "오른쪽";
             Ring(LeftRing, LeftPct, s.Left, s.LeftCharging);
             Ring(RightRing, RightPct, s.Right, s.RightCharging);
             Ring(CaseRing, CasePct, s.Case, s.CaseCharging);
@@ -107,7 +102,6 @@ public partial class PopupWindow : Window
         var c = DeviceArt.Case(m);
         CaseImg.Source = c;
         CaseCol.Width = c == null ? new GridLength(0) : new GridLength(1, GridUnitType.Star);
-        // 그림이 바뀔 때 살짝 떠오르며 나타난다
         BudsImg.Opacity = CaseImg.Opacity = 0;
         var fade = new DoubleAnimation(1, TimeSpan.FromMilliseconds(320)) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut } };
         BudsImg.BeginAnimation(OpacityProperty, fade);
@@ -120,49 +114,69 @@ public partial class PopupWindow : Window
         pct.Text = level is int l ? (charging ? $"⚡{l}" : $"{l}") : "–";
     }
 
-    public void ShowAnimated()
+    void ApplyProgress()
     {
-        _hiding = false;
-        var area = SystemParameters.WorkArea;
-        if (!IsVisible) { Opacity = 0; Show(); }
-        UpdateLayout();
-        Left = area.Right - ActualWidth - 12;
-        Top = area.Bottom - ActualHeight - 12;
-        Activate();
-
-        var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
-        BeginAnimation(OpacityProperty, new DoubleAnimation(1, TimeSpan.FromMilliseconds(220)) { EasingFunction = ease });
-        Slide.BeginAnimation(TranslateTransform.YProperty,
-            new DoubleAnimation(14, 0, TimeSpan.FromMilliseconds(320)) { EasingFunction = new BackEase { EasingMode = EasingMode.EaseOut, Amplitude = 0.25 } });
+        double p = Progress;
+        Root.Opacity = Math.Clamp(p * 1.6, 0, 1);
+        double s = 0.9 + 0.1 * p;
+        Zoom.ScaleX = Zoom.ScaleY = s;
+        Slide.Y = (1 - p) * 40;
     }
 
-    /// <summary>확인용: 창 내용을 PNG로 저장한다(아크릴 배경 대신 단색).</summary>
-    public void SaveSnapshot(string path)
+    /// <param name="fromLid">뚜껑을 열어서 띄우는지. 그러면 포커스를 뺏지 않고, 아래 줄을 숨긴다.</param>
+    public void ShowAnimated(bool fromLid = false)
     {
-        var content = (FrameworkElement)Content;
-        double scale = 2;
-        var rtb = new System.Windows.Media.Imaging.RenderTargetBitmap(
-            (int)(ActualWidth * scale), (int)(ActualHeight * scale), 96 * scale, 96 * scale, PixelFormats.Pbgra32);
-        var dv = new DrawingVisual();
-        using (var dc = dv.RenderOpen())
+        _hiding = false;
+        ShownByLid = fromLid;
+        Footer.Visibility = fromLid ? Visibility.Collapsed : Visibility.Visible;
+        ShowActivated = !fromLid;
+        var area = SystemParameters.WorkArea;
+        bool wasVisible = IsVisible;
+        if (!wasVisible) { Progress = 0; Show(); }
+        UpdateLayout();
+        Left = area.Right - ActualWidth - 4;
+        Top = area.Bottom - ActualHeight - 4;
+        if (!fromLid) Activate();
+        if (fromLid) { _autoClose.Stop(); _autoClose.Start(); }
+
+        // 애플 알림처럼 살짝 튀며 떠올라 자리 잡는다(안드로이드 스프링 0.8 과 비슷한 느낌)
+        BeginAnimation(ProgressProperty, new DoubleAnimation(1, TimeSpan.FromMilliseconds(wasVisible ? 200 : 460))
         {
-            dc.DrawRoundedRectangle((Brush)Resources["WindowBg"], null, new Rect(0, 0, ActualWidth, ActualHeight), 8, 8);
-            dc.DrawRectangle(new VisualBrush(content), null, new Rect(0, 0, ActualWidth, ActualHeight));
-        }
-        rtb.Render(dv);
-        var enc = new System.Windows.Media.Imaging.PngBitmapEncoder();
-        enc.Frames.Add(System.Windows.Media.Imaging.BitmapFrame.Create(rtb));
-        using var f = System.IO.File.Create(path);
-        enc.Save(f);
+            EasingFunction = new BackEase { EasingMode = EasingMode.EaseOut, Amplitude = 0.35 }
+        });
     }
 
     public void HideAnimated()
     {
         if (!IsVisible || _hiding) return;
         _hiding = true;
-        var a = new DoubleAnimation(0, TimeSpan.FromMilliseconds(140)) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseIn } };
-        a.Completed += (_, _) => { if (_hiding) { Hide(); _hiding = false; } };
-        BeginAnimation(OpacityProperty, a);
-        Slide.BeginAnimation(TranslateTransform.YProperty, new DoubleAnimation(0, 8, TimeSpan.FromMilliseconds(140)));
+        _autoClose.Stop();
+        var a = new DoubleAnimation(0, TimeSpan.FromMilliseconds(240))
+        {
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseIn }
+        };
+        a.Completed += (_, _) => { if (_hiding) { Hide(); _hiding = false; ShownByLid = false; } };
+        BeginAnimation(ProgressProperty, a);
+    }
+
+    /// <summary>확인용: 지금 모습을 PNG로 저장한다(진행값을 주면 그 순간의 움직임 프레임).</summary>
+    public void SaveSnapshot(string path, double? progress = null)
+    {
+        if (progress is double p) { BeginAnimation(ProgressProperty, null); Progress = p; }
+        UpdateLayout();
+        double scale = 2;
+        var w = ActualWidth; var h = ActualHeight;
+        var rtb = new System.Windows.Media.Imaging.RenderTargetBitmap((int)(w * scale), (int)(h * scale), 96 * scale, 96 * scale, PixelFormats.Pbgra32);
+        var dv = new DrawingVisual();
+        using (var dc = dv.RenderOpen())
+        {
+            dc.DrawRectangle(new SolidColorBrush(Color.FromRgb(0xDC, 0xE3, 0xEA)), null, new Rect(0, 0, w, h));
+        }
+        rtb.Render(dv);
+        rtb.Render(Root); // 그림자 때문에 어긋나지 않게 창 안 자리 그대로 그린다
+        var enc = new System.Windows.Media.Imaging.PngBitmapEncoder();
+        enc.Frames.Add(System.Windows.Media.Imaging.BitmapFrame.Create(rtb));
+        using var f = System.IO.File.Create(path);
+        enc.Save(f);
     }
 }
