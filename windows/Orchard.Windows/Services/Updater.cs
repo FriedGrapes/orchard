@@ -23,7 +23,11 @@ public sealed class Updater
         try
         {
             var info = await _um.CheckForUpdatesAsync();
-            if (info == null) return null;
+            if (info == null)
+            {
+                Log.Write($"업데이트 확인: 최신 버전이에요(v{CurrentVersion})");
+                return null;
+            }
             await _um.DownloadUpdatesAsync(info);
             _pending = info;
             Log.Write($"업데이트 준비됨: {PendingVersion}");

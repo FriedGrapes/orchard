@@ -23,6 +23,15 @@ public partial class App : Application
         DispatcherUnhandledException += (_, ex) => { Log.Write($"처리 못 한 오류: {ex.Exception}"); ex.Handled = true; };
         AppDomain.CurrentDomain.UnhandledException += (_, ex) => Log.Write($"치명 오류: {ex.ExceptionObject}");
 
+        // 처음 한 번은 '윈도우 시작 때 실행'을 켠다(설치 방식·업데이트와 상관없이). 사용자가 끄면 그대로 둔다.
+        if (!_settings.AutoStartInitialized && _updater.IsInstalled)
+        {
+            AutoStart.Set(true);
+            _settings.AutoStartInitialized = true;
+            _settings.Save();
+            Log.Write("윈도우 시작 때 실행 등록");
+        }
+
         _popup = new PopupWindow(_updater);
         CreateTray();
 

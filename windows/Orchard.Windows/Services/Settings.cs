@@ -12,6 +12,8 @@ public sealed class Settings
     public bool AutoUpdate { get; set; } = true;
     /// <summary>이 PC에서 재생하면 에어팟을 자동으로 가져온다(끄면 '이 PC로 가져오기' 버튼으로만).</summary>
     public bool AutoSwitch { get; set; } = true;
+    /// <summary>'윈도우 시작 때 실행'을 처음 한 번 켰는지. 사용자가 끈 뒤에는 다시 켜지 않으려고 남긴다.</summary>
+    public bool AutoStartInitialized { get; set; }
 
     static readonly string Dir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Orchard");
     static readonly string FilePath = Path.Combine(Dir, "settings.json");
@@ -50,10 +52,20 @@ public static class AutoStart
         }
     }
 
+    /// <summary>
+    /// 설치본이면 업데이트해도 바뀌지 않는 바깥 실행 파일(%LOCALAPPDATA%\Orchard\Orchard.exe)을 쓴다.
+    /// </summary>
+    static string LaunchPath()
+    {
+        var self = Environment.ProcessPath ?? "";
+        var stub = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "Orchard.exe"));
+        return File.Exists(stub) && !string.Equals(stub, self, StringComparison.OrdinalIgnoreCase) ? stub : self;
+    }
+
     public static void Set(bool on)
     {
         using var k = Registry.CurrentUser.CreateSubKey(RunKey);
-        if (on) k.SetValue("Orchard", $"\"{Environment.ProcessPath}\" --background");
+        if (on) k.SetValue("Orchard", $"\"{LaunchPath()}\" --background");
         else k.DeleteValue("Orchard", false);
     }
 }
