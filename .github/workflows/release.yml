@@ -72,14 +72,17 @@ jobs:
           KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
           KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
-          echo "$KEYSTORE_B64" | base64 -d > $RUNNER_TEMP/orchard.jks
+          # 비밀값을 윈도우에서 넣으면 끝에 줄바꿈(CR LF)이 붙을 수 있어 걸러 낸다(키·비밀번호는 영문·숫자뿐)
+          printf %s "$KEYSTORE_B64" | tr -d '\r\n ' | base64 -d > $RUNNER_TEMP/orchard.jks
+          PW=$(printf %s "$KEY_PASSWORD" | tr -d '\r\n ')
           cat > android/local.properties <<EOF
           sdk.dir=$ANDROID_HOME
           RELEASE_STORE_FILE=$RUNNER_TEMP/orchard.jks
-          RELEASE_STORE_PASSWORD=$KEY_PASSWORD
+          RELEASE_STORE_PASSWORD=$PW
           RELEASE_KEY_ALIAS=orchard
-          RELEASE_KEY_PASSWORD=$KEY_PASSWORD
+          RELEASE_KEY_PASSWORD=$PW
           EOF
+          keytool -list -keystore $RUNNER_TEMP/orchard.jks -storepass "$PW" -alias orchard > /dev/null && echo "서명 키 확인됨"
       - name: 시험·빌드
         working-directory: android
         run: ./gradlew --no-daemon testFossDebugUnitTest assembleFossRelease
