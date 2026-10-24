@@ -27,4 +27,13 @@ public static class DeviceArt
 
     public static BitmapImage? Case(AirPodsModel m) =>
         m.IsHeadphones ? null : Load(Key(m.Id) + "_case");
+
+    /// <summary>알맹이 높이 ÷ 케이스 높이 — 실제 제품 치수대로(안드로이드 DeviceArtRow.kt 와 같은 값).</summary>
+    public static double BudToCaseRatio(AirPodsModel m) => Key(m.Id) switch
+    {
+        "airpods_2" => 0.76,
+        "airpods_pro_1" or "airpods_pro_2" => 0.68,
+        "airpods_pro_3" => 0.70,
+        _ => 0.65,
+    };
 }

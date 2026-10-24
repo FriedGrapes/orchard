@@ -81,6 +81,7 @@ import me.kavishdevar.librepods.data.Battery
 import me.kavishdevar.librepods.data.BatteryComponent
 import me.kavishdevar.librepods.data.BatteryStatus
 import me.kavishdevar.librepods.presentation.components.ContinuousRoundedShape
+import me.kavishdevar.librepods.presentation.components.DeviceArtRow
 import me.kavishdevar.librepods.presentation.components.RingCell
 import me.kavishdevar.librepods.presentation.theme.OrchardFont
 
@@ -152,36 +153,18 @@ fun LidCardContent(
             appear.snapTo(0f)
             appear.animateTo(1f, spring(dampingRatio = 0.9f, stiffness = Spring.StiffnessMediumLow))
         }
-        Row(
-            Modifier
-                .fillMaxWidth()
+        DeviceArtRow(
+            model = model,
+            height = LidCardSpec.ArtHeight,
+            modifier = Modifier
                 .padding(top = 10.dp)
-                .height(LidCardSpec.ArtHeight)
                 .graphicsLayer {
                     alpha = appear.value
                     val s = 0.94f + 0.06f * appear.value
                     scaleX = s; scaleY = s
                     translationY = (1f - appear.value) * 10.dp.toPx()
                 },
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Image(
-                painter = painterResource(model?.budsRes ?: R.drawable.airpods_pro_2_buds),
-                contentDescription = model?.name,
-                contentScale = ContentScale.Fit,
-                modifier = Modifier.weight(if (isHeadphones) 1f else 1.15f)
-            )
-            if (!isHeadphones) {
-                Image(
-                    painter = painterResource(model?.caseRes ?: R.drawable.airpods_pro_2_case),
-                    contentDescription = null,
-                    contentScale = ContentScale.Fit,
-                    modifier = Modifier.weight(1f).padding(10.dp)
-                )
-            }
-        }
-
+        )
         Spacer(Modifier.height(14.dp))
         @Composable
         fun Cell(b: Battery?, label: String, delayMs: Long) = RingCell(

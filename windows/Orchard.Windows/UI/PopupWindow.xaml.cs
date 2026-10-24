@@ -98,10 +98,23 @@ public partial class PopupWindow : Window
         ArtRow.Visibility = Visibility.Visible;
         if (_shownModel == m.Id) return;
         _shownModel = m.Id;
-        BudsImg.Source = DeviceArt.Buds(m);
+        var b = DeviceArt.Buds(m);
         var c = DeviceArt.Case(m);
+        BudsImg.Source = b;
         CaseImg.Source = c;
-        CaseCol.Width = c == null ? new GridLength(0) : new GridLength(1, GridUnitType.Star);
+        CaseImg.Visibility = c == null ? Visibility.Collapsed : Visibility.Visible;
+        double full = ArtRow.Height;
+        if (c == null) { BudsImg.Height = full; }
+        else
+        {
+            // 높이 기준으로 놓고 폭(카드 안쪽 340)이 넘치면 둘을 같은 배율로 줄인다
+            double ratio = DeviceArt.BudToCaseRatio(m), gap = 18, room = 340;
+            double caseAr = (double)c.PixelWidth / c.PixelHeight, budsAr = (double)b.PixelWidth / b.PixelHeight;
+            double caseH = full, total = caseH * caseAr + caseH * ratio * budsAr + gap;
+            if (total > room) caseH *= (room - gap) / (total - gap);
+            CaseImg.Height = caseH;
+            BudsImg.Height = caseH * ratio;
+        }
         BudsImg.Opacity = CaseImg.Opacity = 0;
         var fade = new DoubleAnimation(1, TimeSpan.FromMilliseconds(320)) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut } };
         BudsImg.BeginAnimation(OpacityProperty, fade);

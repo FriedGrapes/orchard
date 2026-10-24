@@ -112,10 +112,10 @@ fun DeviceHeroCard(
             appear.snapTo(0f)
             appear.animateTo(1f, spring(dampingRatio = 0.9f, stiffness = Spring.StiffnessMediumLow))
         }
-        Row(
+        DeviceArtRow(
+            model = model,
+            height = if (isHeadphones) 156.dp else 136.dp,
             modifier = Modifier
-                .fillMaxWidth()
-                .height(if (isHeadphones) 176.dp else 156.dp)
                 .padding(vertical = 10.dp)
                 .graphicsLayer {
                     alpha = appear.value
@@ -123,28 +123,7 @@ fun DeviceHeroCard(
                     scaleX = s; scaleY = s
                     translationY = (1f - appear.value) * 12.dp.toPx()
                 },
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            val buds = model?.budsRes ?: R.drawable.airpods_pro_2_buds
-            Image(
-                painter = painterResource(buds),
-                contentDescription = model?.name,
-                contentScale = ContentScale.Fit,
-                modifier = Modifier.weight(if (isHeadphones) 1f else 1.15f)
-            )
-            if (!isHeadphones) {
-                Spacer(Modifier.width(8.dp))
-                Image(
-                    painter = painterResource(model?.caseRes ?: R.drawable.airpods_pro_2_case),
-                    contentDescription = null,
-                    contentScale = ContentScale.Fit,
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(8.dp)
-                )
-            }
-        }
+        )
 
         // 배터리 링
         if (isHeadphones) {
