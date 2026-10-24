@@ -18,9 +18,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import me.kavishdevar.librepods.BuildConfig
 import me.kavishdevar.librepods.R
 
+/** Orchard 개인정보 안내. 원본(LibrePods)의 결제·후원·문의 안내는 Orchard 에 맞지 않아 새로 썼다. */
 @Composable
 fun PrivacyPolicyPage(
     onForward: () -> Unit
@@ -41,144 +41,31 @@ fun PrivacyPolicyPage(
         ) {
             Spacer(modifier = Modifier.height(24.dp))
             Text(
-                text = "Last updated: 20 June 2026",
+                text = "고친 날: 2026년 10월 25일",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
-            Text(
-                text = "Overview",
-                style = MaterialTheme.typography.titleLarge
+            Section(
+                "모으는 정보",
+                "Orchard는 개인정보를 모으거나 밖으로 보내지 않아요. 광고·분석·추적·오류 보고 기능도 없어요."
             )
-
-            Text(
-                text = "LibrePods does not collect, store, sell, or share personal information for advertising, analytics, tracking, or profiling purposes. The app does not include analytics, crash reporting, telemetry, advertising SDKs, or tracking services.",
-                style = MaterialTheme.typography.bodyMedium
+            Section(
+                "인터넷을 쓰는 곳",
+                "새 버전이 있는지 GitHub(github.com/FriedGrapes/orchard)에서 확인하고 받을 때만 인터넷을 써요. " +
+                    "설정 › 앱 업데이트에서 끌 수 있어요."
             )
-
-            Text(
-                text = "All information remains on your device unless you explicitly choose to contact me, create a GitHub issue from the app, or make a purchase or sponsorship through a third-party platform.",
-                style = MaterialTheme.typography.bodyMedium
+            Section(
+                "위치",
+                "'에어팟 찾기'를 켜면 에어팟 연결이 끊긴 순간의 위치를 이 폰 안에만 저장해요. 어디로도 보내지 않아요."
             )
-
-            Text(
-                text = "Third Party Services",
-                style = MaterialTheme.typography.titleLarge
+            Section(
+                "에어팟 정보",
+                "배터리·착용 상태·기기 정보는 에어팟과 이 폰 사이에서만 오가요."
             )
-
-            Text(
-                text = "LibrePods provides several ways to contact me, including email, Discord, and GitHub Issues.",
-                style = MaterialTheme.typography.bodyMedium
-            )
-
-            Text(
-                text = "Email",
-                style = MaterialTheme.typography.titleMedium
-            )
-
-            Text(
-                text = "If you contact me by email, I receive your email address and any information you choose to include in your message. When using the contact form within LibrePods, your email client will open with a pre-filled email address, the subject line and body that you fill out. The body will also include LibrePods version information and device information to help with troubleshooting.",
-                style = MaterialTheme.typography.bodyMedium
-            )
-
-            Text(
-                text = "You can edit or remove any of this information before sending the email.",
-                style = MaterialTheme.typography.bodyMedium
-            )
-
-            Text(
-                text = "Discord",
-                style = MaterialTheme.typography.titleMedium
-            )
-
-            Text(
-                text = "The app provides a link to the LibrePods Discord server. If you choose to join the Discord server, you will be subject to Discord's privacy policy.",
-                style = MaterialTheme.typography.bodyMedium
-            )
-
-            Text(
-                text = "I do not receive any information about you from Discord other than what is publicly visible in the Discord server, such as your username, joining date, common servers, and any messages or content you post in the server, unless you choose to share it with me in the Discord server.",
-                style = MaterialTheme.typography.bodyMedium
-            )
-
-            Text(
-                text = "GitHub Issues",
-                style = MaterialTheme.typography.titleMedium
-            )
-
-            Text(
-                text = "When creating a GitHub issue through LibrePods, the app will pre-fill the issue form with:",
-                style = MaterialTheme.typography.bodyMedium
-            )
-
-            Column(
-                verticalArrangement = Arrangement.spacedBy(4.dp),
-                modifier = Modifier.padding(start = 8.dp)
-            ) {
-                Text(
-                    "• LibrePods version name and version code",
-                    style = MaterialTheme.typography.bodyMedium
-                )
-                Text(
-                    text = "• Device manufacturer and model",
-                    style = MaterialTheme.typography.bodyMedium
-                )
-                Text(
-                    text = "• Android build information",
-                    style = MaterialTheme.typography.bodyMedium
-                )
-                Text(
-                    text = "• Installation source (Google Play or GitHub)",
-                    style = MaterialTheme.typography.bodyMedium
-                )
-            }
-
-            Text(
-                text = "This information helps diagnose bugs and provide support. No information is sent automatically. The information is only submitted if you choose to create the GitHub issue.",
-                style = MaterialTheme.typography.bodyMedium
-            )
-
-            Text(
-                text = "Payments", style = MaterialTheme.typography.titleLarge
-            )
-
-            if (BuildConfig.PLAY_BUILD) {
-                Text(
-                    text = "Google Play", style = MaterialTheme.typography.titleMedium
-                )
-
-                Text(
-                    text = "When using the version available on Google Play, purchases are processed by Google Play.",
-                    style = MaterialTheme.typography.bodyMedium
-                )
-
-                Text(
-                    text = "LibrePods verifies the purchase with Google Play on-device, not with a remote server that I control. I do not receive any information about you or your purchase from Google Play. Payment processing is handled entirely by Google Play, and I do not have access to any of your payment information.",
-                    style = MaterialTheme.typography.bodyMedium
-                )
-            } else {
-                Text(
-                    text = "GitHub Sponsors", style = MaterialTheme.typography.titleMedium
-                )
-
-                Text(
-                    text = "When using the FOSS version available on GitHub, the upgrade button links to GitHub Sponsors. If you choose to sponsor LibrePods, your sponsorship is processed by GitHub.",
-                    style = MaterialTheme.typography.bodyMedium
-                )
-
-                Text(
-                    text = "Your username and country/region are shared with me when you sponsor LibrePods. Depending on your GitHub Sponsors privacy settings, I may also receive your email address.",
-                    style = MaterialTheme.typography.bodyMedium
-                )
-            }
-
-            Text(
-                text = "Contact", style = MaterialTheme.typography.titleLarge
-            )
-
-            Text(
-                text = "If you have questions about this privacy policy, please contact me via email at privacy@kavish.xyz.",
-                style = MaterialTheme.typography.bodyMedium
+            Section(
+                "원본 프로젝트",
+                "Orchard는 LibrePods(GPL-3.0)를 바탕으로 만든 앱이에요. 소스는 모두 공개돼 있어요."
             )
 
             Button(
@@ -194,4 +81,10 @@ fun PrivacyPolicyPage(
             Spacer(modifier = Modifier.height(24.dp))
         }
     }
+}
+
+@Composable
+private fun Section(title: String, body: String) {
+    Text(text = title, style = MaterialTheme.typography.titleLarge)
+    Text(text = body, style = MaterialTheme.typography.bodyMedium)
 }

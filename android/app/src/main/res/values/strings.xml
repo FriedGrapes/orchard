@@ -214,9 +214,6 @@
     <string name="listening_mode_transparency_description">Lets in external sounds</string>
     <string name="listening_mode_adaptive_description">Dynamically adjust external noise</string>
     <string name="listening_mode_noise_cancellation_description">Blocks out external sounds</string>
-    <string name="unlock_advanced_features">Unlock advanced features</string>
-    <string name="buy_price">Buy %s</string>
-    <string name="restore_purchases">Restore purchases</string>
     <string name="ear_detection_description">Automatically stop playing audio when you take them off, and resume playback when you put them back on.</string>
     <string name="battery">Battery</string>
     <string name="battery_description">View accurate battery status in the app and notification.</string>
@@ -227,7 +224,6 @@
     <string name="automatic_connection_description">Enable and customize automatic connection to AirPods.</string>
     <string name="customizations_description">Get access to app customizations, including phone battery in widget, conversation awareness volume, and many more upcoming customization features.</string>
     <string name="support_the_development">Support the development</string>
-    <string name="support_development_description">LibrePods is developed by a single developer. Upgrading helps keep the app alive.</string>
     <string name="feature_availability_disclaimer">Feature availability depends on your AirPods model and firmware version.</string>
     <string name="contact">Contact</string>
     <string name="email">E-Mail</string>
@@ -243,7 +239,6 @@
     <string name="bypass_compatibility_check">Bypass compatibility check</string>
     <string name="bypass_compatiblity_check_confirmation">Are you sure your device is supported natively/you have Xposed module enabled?</string>
     <string name="not_supported">Not supported</string>
-    <string name="name_your_own_price">(Name your own price)</string>
     <string name="compatibility_play_dialog_confirmation">
         This device may not be supported due to platform limitations and requires an Xposed framework. Tick the checkbox below and type OK to continue.
     </string>
@@ -265,7 +260,6 @@
     <string name="optimized_charging">Optimized Charge Limit</string>
     <string name="optimized_charging_description">AirPods can learn from your daily usage and determine when to charge to an optmized limit and when to allow or full charge. This limit adapts to your daily usage and preserves your battery lifespan over time.\nThis setting may not affect unsupported AirPods, or AirPods on an older firmware version.</string>
     <string name="enable_app_in_xposed_or_update_device">Update your device or enable LibrePods in Xposed and reopen the app to proceed.</string>
-    <string name="play_foss_premium_banner">Your app was updated to the Google Play version; advanced features will be disabled in %1$d days. Update from your original source to stay on the FOSS version, wait for this period to end to purchase the upgrade directly, or tap here to request a promo code if you are already a supporter.</string>
     <string name="custom">Custom</string>
     <string name="recommended">Recommended</string>
     <string name="appearance">Appearance</string>

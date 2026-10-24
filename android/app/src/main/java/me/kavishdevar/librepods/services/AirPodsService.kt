@@ -156,7 +156,10 @@ object ServiceManager {
 class AirPodsService : Service(), SharedPreferences.OnSharedPreferenceChangeListener {
     // Orchard: 서비스와 함께 끝나는 작업 범위, 연결 시도 겹침 방지
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    private val connecting = java.util.concurrent.atomic.AtomicBoolean(false)
+    private var connectJob: kotlinx.coroutines.Job? = null
+    @Volatile private var connectingAddress: String? = null
+    /** 지금 연결 중인 소켓(다른 에어팟으로 바꿀 때 닫아서 멈춘다). */
+    @Volatile private var pendingSocket: BluetoothSocket? = null
     private fun Int?.orZero(): Int = this ?: 0
     var macAddress = ""
     var localMac = ""
@@ -680,9 +683,15 @@ class AirPodsService : Service(), SharedPreferences.OnSharedPreferenceChangeList
                         intent.getParcelableExtra("device") as BluetoothDevice?
                     }
 
-                    if (config.deviceName == "AirPods" && device?.name != null) {
+                    // Orchard: 다른 에어팟이 연결되면(또는 이름이 기본값이면) 그 기기의 이름·주소로 바꾼다
+                    val switched = device?.address != null && device?.address != macAddress
+                    if ((switched || config.deviceName == "AirPods") && device?.name != null) {
                         config.deviceName = device?.name ?: "AirPods"
                         sharedPreferences.edit { putString("name", config.deviceName) }
+                    }
+                    if (switched) {
+                        macAddress = device!!.address
+                        sharedPreferences.edit { putString("mac_address", macAddress) }
                     }
 
 //                    Log.d("AirPodsCrossDevice", CrossDevice.isAvailable.toString())
@@ -776,7 +785,8 @@ class AirPodsService : Service(), SharedPreferences.OnSharedPreferenceChangeList
                             override fun onServiceConnected(profile: Int, proxy: BluetoothProfile) {
                                 if (profile == BluetoothProfile.A2DP) {
                                     val connectedDevices = proxy.connectedDevices
-                                    if (connectedDevices.isNotEmpty()) {
+                                    // Orchard: 원본은 아무 기기나 연결돼 있으면 목록 앞쪽 에어팟에 붙었다(여러 에어팟을 쓰면 엉뚱한 기기).
+                                    if (connectedDevices.any { it.address == device.address }) {
 //                                        if (!CrossDevice.isAvailable) {
                                         CoroutineScope(Dispatchers.IO).launch {
                                             connectToSocket(bluetoothAdapter, device)
@@ -2223,7 +2233,7 @@ class AirPodsService : Service(), SharedPreferences.OnSharedPreferenceChangeList
     private fun resToUri(resId: Int): Uri? {
         return try {
             Uri.Builder().scheme(ContentResolver.SCHEME_ANDROID_RESOURCE)
-                .authority("me.kavishdevar.librepods")
+                .authority(packageName)
                 .appendPath(applicationContext.resources.getResourceTypeName(resId))
                 .appendPath(applicationContext.resources.getResourceEntryName(resId)).build()
         } catch (_: Resources.NotFoundException) {
@@ -2370,7 +2380,7 @@ class AirPodsService : Service(), SharedPreferences.OnSharedPreferenceChangeList
                     device.METADATA_MANUFACTURER_NAME,
                     instance.model.manufacturer.toByteArray()
                 ) && SystemApisUtils.setMetadata(
-                    device, device.METADATA_COMPANION_APP, "me.kavishdevar.librepods".toByteArray()
+                    device, device.METADATA_COMPANION_APP, packageName.toByteArray()
                 ) && SystemApisUtils.setMetadata(
                     device,
                     device.METADATA_UNTETHERED_CASE_LOW_BATTERY_THRESHOLD,
@@ -2413,15 +2423,21 @@ class AirPodsService : Service(), SharedPreferences.OnSharedPreferenceChangeList
                 Log.d(TAG, "Received bluetooth connection broadcast: action=$action")
                 val uuid = ParcelUuid.fromString("74ec2172-0bad-4d01-8f77-997b2be0722a")
 
-                if (BluetoothDevice.ACTION_ACL_CONNECTED == action) {
-                    if (bluetoothDevice.uuids?.contains(uuid) == true) {
-                        val intent = Intent(AirPodsNotifications.AIRPODS_CONNECTION_DETECTED)
-                        intent.putExtra("name", name)
-                        intent.putExtra("device", bluetoothDevice)
-                        context?.sendBroadcast(intent)
-                    } /* else {
-                        bluetoothDevice.fetchUuidsWithSdp()
-                    } */
+                // Orchard: ACL 연결 신호만 기다리면 일부 폰(안드로이드 17 삼성 등)에서 에어팟 연결을 놓친다.
+                // 오디오·헤드셋 '연결됨', 기기 정보(UUID) 신호에서도 에어팟(AAP 서비스가 있는 기기)을 알아챈다.
+                val profileConnected = (action == "android.bluetooth.a2dp.profile.action.CONNECTION_STATE_CHANGED" ||
+                    action == "android.bluetooth.headset.profile.action.CONNECTION_STATE_CHANGED") &&
+                    intent.getIntExtra("android.bluetooth.profile.extra.STATE", -1) == 2 // STATE_CONNECTED
+                val looksConnected = BluetoothDevice.ACTION_ACL_CONNECTED == action || profileConnected ||
+                    action == "android.bluetooth.device.action.UUID"
+                if (looksConnected && bluetoothDevice.uuids?.contains(uuid) == true &&
+                    BluetoothConnectionManager.aacpSocket?.isConnected != true
+                ) {
+                    Log.d(TAG, "AirPods detected from $action")
+                    val intent = Intent(AirPodsNotifications.AIRPODS_CONNECTION_DETECTED)
+                    intent.putExtra("name", name)
+                    intent.putExtra("device", bluetoothDevice)
+                    context?.sendBroadcast(intent)
                 } /* else if ("android.bluetooth.device.action.UUID" == action) {
                     val savedMac = context?.getSharedPreferences("settings", MODE_PRIVATE)
                         ?.getString("mac_address", "") ?: ""
@@ -2650,12 +2666,27 @@ class AirPodsService : Service(), SharedPreferences.OnSharedPreferenceChangeList
     fun connectToSocket(
         adapter: BluetoothAdapter, device: BluetoothDevice, manual: Boolean = false
     ) {
-        if (BluetoothConnectionManager.aacpSocket?.isConnected == true) return
-        if (!connecting.compareAndSet(false, true)) {
-            Log.d(TAG, "Connection attempt already in progress, skipping")
-            return
+        if (BluetoothConnectionManager.aacpSocket?.isConnected == true &&
+            this.device?.address == device.address
+        ) return
+        synchronized(this) {
+            if (connectJob?.isActive == true) {
+                if (connectingAddress == device.address) {
+                    Log.d(TAG, "Connection attempt already in progress, skipping")
+                    return
+                }
+                // 다른 에어팟으로 가던 시도(예: 근처에 없는 마지막 기기)를 멈추고 지금 연결된 기기로 바꾼다
+                Log.d(TAG, "Switching connection attempt from $connectingAddress to ${device.address}")
+                connectJob?.cancel()
+                runCatching { pendingSocket?.close() }
+            }
+            if (BluetoothConnectionManager.aacpSocket?.isConnected == true) {
+                runCatching { BluetoothConnectionManager.aacpSocket?.close() }
+                BluetoothConnectionManager.aacpSocket = null
+            }
+            connectingAddress = device.address
         }
-        serviceScope.launch {
+        connectJob = serviceScope.launch {
             try {
                 val attempts = if (manual) 1 else 4
                 for (i in 0 until attempts) {
@@ -2668,7 +2699,7 @@ class AirPodsService : Service(), SharedPreferences.OnSharedPreferenceChangeList
                     if (BluetoothConnectionManager.aacpSocket?.isConnected == true) break
                 }
             } finally {
-                connecting.set(false)
+                if (connectingAddress == device.address) connectingAddress = null
             }
         }
     }
@@ -2689,6 +2720,7 @@ class AirPodsService : Service(), SharedPreferences.OnSharedPreferenceChangeList
             return
         }
 
+        pendingSocket = socket
         // Orchard: withTimeout 은 블로킹 connect()를 멈추지 못하므로 소켓을 닫아서 끊는다.
         val watchdog = serviceScope.launch {
             delay(6000)
@@ -3235,6 +3267,21 @@ class AirPodsService : Service(), SharedPreferences.OnSharedPreferenceChangeList
     @SuppressLint("MissingPermission")
     fun reconnectFromSavedMac() {
         val bluetoothAdapter = getSystemService(BluetoothManager::class.java).adapter
+        val aap = ParcelUuid.fromString("74ec2172-0bad-4d01-8f77-997b2be0722a")
+        // Orchard: 마지막 기기보다 지금 블루투스로 붙어 있는 에어팟을 먼저 고른다
+        val connectedAirPods = bluetoothAdapter.bondedDevices.firstOrNull { d ->
+            d.uuids?.contains(aap) == true &&
+                runCatching { d.javaClass.getMethod("isConnected").invoke(d) as Boolean }.getOrDefault(false)
+        }
+        if (connectedAirPods != null && connectedAirPods.address != macAddress) {
+            Log.d(TAG, "Reconnect: using currently connected ${connectedAirPods.address} instead of saved $macAddress")
+            macAddress = connectedAirPods.address
+            config.deviceName = connectedAirPods.name ?: config.deviceName
+            sharedPreferences.edit {
+                putString("mac_address", macAddress)
+                putString("name", config.deviceName)
+            }
+        }
         device = bluetoothAdapter.bondedDevices.find {
             it.address == macAddress
         }

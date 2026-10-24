@@ -139,7 +139,12 @@ class PopupWindow(
 
                 val vid = mView.findViewById<VideoView>(R.id.video)
                 vid.setAudioFocusRequest(AudioManager.AUDIOFOCUS_NONE)
-                vid.setVideoPath("android.resource://me.kavishdevar.librepods/" + R.raw.connected)
+                // Orchard: 원본 패키지 이름 대신 지금 앱의 이름. 재생이 안 되면 오류 창 대신 숨긴다.
+                vid.setOnErrorListener { _, _, _ ->
+                    vid.visibility = View.GONE
+                    true
+                }
+                vid.setVideoPath("android.resource://${mView.context.packageName}/" + R.raw.connected)
                 vid.resolveAdjustedSize(vid.width, vid.height)
                 vid.start()
                 vid.setOnCompletionListener {

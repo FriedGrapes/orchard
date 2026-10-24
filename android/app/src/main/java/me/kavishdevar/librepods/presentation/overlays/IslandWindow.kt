@@ -374,8 +374,14 @@ class IslandWindow(private val context: Context) {
         }
 
         val videoView = islandView.findViewById<VideoView>(R.id.island_video_view)
-        val videoUri = "android.resource://me.kavishdevar.librepods/${R.raw.island}".toUri()
+        // Orchard: 앱 ID가 바뀌었으니 원본 패키지 이름을 박지 않는다. 재생이 안 되면 오류 창(오버레이에선 앱이 멈춤) 대신 숨긴다.
+        val videoUri = "android.resource://${islandView.context.packageName}/${R.raw.island}".toUri()
         videoView.setAudioFocusRequest(AudioManager.AUDIOFOCUS_NONE)
+        videoView.setOnErrorListener { _, what, extra ->
+            android.util.Log.w("IslandWindow", "Island video failed ($what/$extra), hiding it")
+            videoView.visibility = View.GONE
+            true
+        }
         videoView.setVideoURI(videoUri)
         videoView.setOnPreparedListener { mediaPlayer ->
             mediaPlayer.isLooping = true

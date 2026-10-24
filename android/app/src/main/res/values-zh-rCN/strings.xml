@@ -215,9 +215,6 @@
     <string name="listening_mode_transparency_description">允许外部声音</string>
     <string name="listening_mode_adaptive_description">动态调整外部噪声</string>
     <string name="listening_mode_noise_cancellation_description">阻隔外部声音</string>
-    <string name="unlock_advanced_features">解锁高级功能</string>
-    <string name="buy_price">购买 %s</string>
-    <string name="restore_purchases">恢复购买</string>
     <string name="ear_detection_description">摘下 AirPods 时自动暂停播放，重新戴上时继续播放。</string>
     <string name="battery">电池</string>
     <string name="battery_description">在应用和通知中查看准确的电池状态。</string>
@@ -228,7 +225,6 @@
     <string name="automatic_connection_description">启用并自定义自动连接到 AirPods。</string>
     <string name="customizations_description">解锁应用的个性化设置，包括小组件中的手机电量、对话感知音量，以及更多即将推出的个性化功能。</string>
     <string name="support_the_development">支持开发</string>
-    <string name="support_development_description">LibrePods 由一位开发者独立开发。升级有助于让这款应用持续维护下去。</string>
     <string name="feature_availability_disclaimer">功能是否可用取决于你的 AirPods 型号和固件版本。</string>
     <string name="contact">联系方式</string>
     <string name="email">电子邮件</string>
@@ -243,7 +239,6 @@
     <string name="bypass_compatibility_check">跳过兼容性检查</string>
     <string name="bypass_compatiblity_check_confirmation">你确定你的设备原生受支持，或已启用 Xposed 模块吗？</string>
     <string name="not_supported">不受支持</string>
-    <string name="name_your_own_price">（价格由你决定）</string>
     <string name="compatibility_play_dialog_confirmation">
         由于平台限制，此设备可能不受支持，需要使用 Xposed 框架。请勾选下方的复选框并输入 OK 以继续。
     </string>
@@ -265,7 +260,6 @@
     <string name="optimized_charging">优化充电上限</string>
     <string name="optimized_charging_description">AirPods 可学习你的每日用量，并决定何时充电至优化上限以及何时允许完全充电。此上限根据你的每日用量调整，并可在长期内延长电池寿命。\n此设置可能对不受支持的 AirPods 或固件版本较旧的 AirPods 无效。</string>
     <string name="enable_app_in_xposed_or_update_device">请更新你的设备，或在 Xposed 中启用 LibrePods 并重新打开应用以继续。</string>
-    <string name="play_foss_premium_banner">您的应用已更新为 Google Play 版本，高级功能将在 %1$d 天后停用。请从您的原始安装源更新以继续使用 FOSS 版本，或等待此期限结束后直接购买升级；如果您已是支持者，请点按此处申请促销代码。</string>
     <string name="custom">自定义</string>
     <string name="recommended">推荐</string>
     <string name="appearance">外观</string>

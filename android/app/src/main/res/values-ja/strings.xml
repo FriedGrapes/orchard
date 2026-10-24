@@ -214,9 +214,6 @@
     <string name="listening_mode_transparency_description">周囲の音を取り込みます</string>
     <string name="listening_mode_adaptive_description">周囲のノイズを動的に調整します</string>
     <string name="listening_mode_noise_cancellation_description">周囲の音を遮断します</string>
-    <string name="unlock_advanced_features">高度な機能をアンロック</string>
-    <string name="buy_price">購入 %s</string>
-    <string name="restore_purchases">購入を復元</string>
     <string name="ear_detection_description">AirPodsを耳から外すとオーディオの再生を自動的に停止し、再び装着すると再生を再開します。</string>
     <string name="battery">バッテリー</string>
     <string name="battery_description">アプリと通知で正確なバッテリー状況を確認できます。</string>
@@ -227,7 +224,6 @@
     <string name="automatic_connection_description">AirPodsへの自動接続を有効化およびカスタマイズします。</string>
     <string name="customizations_description">ウィジェット内のスマートフォンバッテリー表示、会話感知の音量調整、今後追加される機能など、アプリのカスタマイズ機能にアクセスできます。</string>
     <string name="support_the_development">開発を支援する</string>
-    <string name="support_development_description">LibrePodsは個人開発者によって開発されています。アップグレードすることでアプリの継続的な開発を支援できます。</string>
     <string name="feature_availability_disclaimer">利用できる機能は、お使いのAirPodsのモデルおよびファームウェアのバージョンによって異なります。</string>
     <string name="contact">お問い合わせ</string>
     <string name="email">メール</string>
@@ -243,7 +239,6 @@
     <string name="bypass_compatibility_check">互換性チェックをスキップ</string>
     <string name="bypass_compatiblity_check_confirmation">お使いのデバイスがネイティブでサポートされているか、Xposedモジュールが有効になっていることを確認しましたか？</string>
     <string name="not_supported">非対応</string>
-    <string name="name_your_own_price">（任意の金額を指定）</string>
     <string name="compatibility_play_dialog_confirmation">
         このデバイスはプラットフォームの制限によりサポートされていない可能性があり、Xposedフレームワークが必要です。続行するには下のチェックボックスをオンにして「OK」と入力してください。
     </string>
@@ -265,7 +260,6 @@
     <string name="optimized_charging">最適化された充電上限</string>
     <string name="optimized_charging_description">AirPodsが毎日の使用状況を学習し、最適化された上限まで充電するタイミングと、フル充電を許可するタイミングを判断します。この上限は日々の使用状況に適応し、長期的にバッテリーの寿命を延ばします。\n非対応のAirPodsや古いファームウェアバージョンのAirPodsでは、この設定が反映されない場合があります。</string>
     <string name="enable_app_in_xposed_or_update_device">続行するには、デバイスをアップデートするか、XposedでLibrePodsを有効にしてからアプリを開き直してください。</string>
-    <string name="play_foss_premium_banner">アプリがGoogle Play版に更新されたため、高度な機能は%1$d日後に無効になります。FOSS版を使い続けるには元の入手先から更新してください。期間終了後にアップグレードを直接購入するか、すでにプロジェクトを支援されている場合はこちらをタップしてプロモーションコードをリクエストしてください。</string>
     <string name="custom">カスタム</string>
     <string name="recommended">推奨</string>
     <string name="appearance">外観</string>

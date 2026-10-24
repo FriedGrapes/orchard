@@ -45,9 +45,7 @@ fun AudioSettings(
     navigateToAdaptiveStrength: () -> Unit,
     navigateToEqualizer: () -> Unit,
 
-    vendorIdHook: Boolean,
-    isPremium: Boolean
-) {
+    vendorIdHook: Boolean) {
     if (adaptiveVolumeCapability || conversationAwarenessCapability || loudSoundReductionCapability || adaptiveAudioCapability) {
         StyledList(title = stringResource(R.string.audio)) {
             if (adaptiveVolumeCapability) {
@@ -56,7 +54,6 @@ fun AudioSettings(
                     description = stringResource(R.string.personalized_volume_description),
                     checked = adaptiveVolumeChecked,
                     onCheckedChange = onAdaptiveVolumeCheckedChange,
-                    enabled = isPremium,
                 )
             }
 
@@ -66,7 +63,6 @@ fun AudioSettings(
                     description = stringResource(R.string.conversation_awareness_description),
                     checked = conversationAwarenessChecked,
                     onCheckedChange = onConversationAwarenessCheckedChange,
-                    enabled = isPremium,
                 )
             }
 
@@ -76,7 +72,6 @@ fun AudioSettings(
                     description = stringResource(R.string.loud_sound_reduction_description),
                     checked = loudSoundReductionChecked,
                     onCheckedChange = onLoudSoundReductionCheckedChange,
-                    enabled = isPremium,
                 )
             }
 

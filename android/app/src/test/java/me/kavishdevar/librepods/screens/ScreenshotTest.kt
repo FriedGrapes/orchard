@@ -40,7 +40,7 @@ class ScreenshotTest {
                         onAutomaticEarDetectionChanged = {}, onAutomaticConnectionChanged = {},
                         setDynamicEndOfCharge = {}, setOffListeningMode = {}, disconnect = {},
                         navigateToRename = {}, navigateToHearingProtection = {}, navigateToHearingAid = {},
-                        navigateToLeftLongPress = {}, navigateToRightLongPress = {}, navigateToPurchase = {},
+                        navigateToLeftLongPress = {}, navigateToRightLongPress = {},
                         navigateToAdaptiveStrength = {}, navigateToEqualizer = {}, navigateToHeadTracking = {},
                         navigateToAccessibility = {}, navigateToVersion = {}, navigateToTroubleshooting = {},
                         navigateToCallControlScreen = {}, navigateToMicrophoneSettings = {},

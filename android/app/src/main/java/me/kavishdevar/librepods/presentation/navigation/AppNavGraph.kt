@@ -31,7 +31,6 @@ import me.kavishdevar.librepods.presentation.screens.LoadingScreen
 import me.kavishdevar.librepods.presentation.screens.LongPress
 import me.kavishdevar.librepods.presentation.screens.MicrophoneSettingsRoute
 import me.kavishdevar.librepods.presentation.screens.OpenSourceLicensesScreen
-import me.kavishdevar.librepods.presentation.screens.PurchaseScreen
 import me.kavishdevar.librepods.presentation.screens.ReleaseNotesScreen
 import me.kavishdevar.librepods.presentation.screens.RenameScreen
 import me.kavishdevar.librepods.presentation.screens.TransparencySettingsScreen
@@ -43,7 +42,6 @@ import me.kavishdevar.librepods.presentation.theme.DesignSystem
 import me.kavishdevar.librepods.presentation.theme.LocalDesignSystem
 import me.kavishdevar.librepods.presentation.viewmodel.AirPodsViewModel
 import me.kavishdevar.librepods.presentation.viewmodel.AppSettingsViewModel
-import me.kavishdevar.librepods.presentation.viewmodel.PurchaseViewModel
 
 @OptIn(ExperimentalHazeMaterialsApi::class)
 @Composable
@@ -59,9 +57,6 @@ fun AppNavGraph(
         backStack.add(screen)
     }
 
-    fun navigateToPurchase() {
-        navigate(Screen.Purchase)
-    }
 
     val m3eEnabled = LocalDesignSystem.current == DesignSystem.Material
 
@@ -102,7 +97,6 @@ fun AppNavGraph(
                                         Screen.LongPress("Right")
                                     )
                                 },
-                                navigateToPurchase = { navigate(Screen.Purchase) },
                                 navigateToAdaptiveStrength = { navigate(Screen.AdaptiveStrength) },
                                 navigateToEqualizer = { navigate(Screen.Equalizer) },
                                 navigateToHeadTracking = { navigate(Screen.HeadTracking) },
@@ -126,7 +120,6 @@ fun AppNavGraph(
                             val vm: AppSettingsViewModel = viewModel()
                             AppSettingsScreen(
                                 viewModel = vm,
-                                navigateToPurchase = ::navigateToPurchase,
                                 navigateToTroubleshooting = { navigate(Screen.Troubleshooting) },
                                 navigateToOpenSourceLicenses = { navigate(Screen.OpenSourceLicenses) },
                                 navigateToReleaseNotesScreen = { navigate(Screen.ReleaseNotes) }
@@ -146,7 +139,7 @@ fun AppNavGraph(
                     Screen.HeadTracking ->
                         NavEntry(screen) {
                             if (!airPodsViewModel.isReady) LoadingScreen()
-                            HeadTrackingScreen(airPodsViewModel, ::navigateToPurchase)
+                            HeadTrackingScreen(airPodsViewModel)
                         }
 
                     Screen.Accessibility ->
@@ -154,7 +147,6 @@ fun AppNavGraph(
                             if (!airPodsViewModel.isReady) LoadingScreen()
                             AccessibilitySettingsScreen(
                                 viewModel = airPodsViewModel,
-                                navigateToPurchase = ::navigateToPurchase,
                                 navigateToTransparencyCustomization = { navigate(Screen.TransparencyCustomization) }
                             )
                         }
@@ -184,7 +176,7 @@ fun AppNavGraph(
                     Screen.AdaptiveStrength ->
                         NavEntry(screen) {
                             if (!airPodsViewModel.isReady) LoadingScreen()
-                            AdaptiveStrengthScreen(airPodsViewModel, ::navigateToPurchase)
+                            AdaptiveStrengthScreen(airPodsViewModel)
                         }
 
 //                Screen.CameraControl ->
@@ -213,15 +205,9 @@ fun AppNavGraph(
                             if (!airPodsViewModel.isReady) LoadingScreen()
                             HearingProtectionScreen(
                                 viewModel = airPodsViewModel,
-                                navigateToPurchase = ::navigateToPurchase
                             )
                         }
 
-                    Screen.Purchase ->
-                        NavEntry(screen) {
-                            val vm: PurchaseViewModel = viewModel()
-                            PurchaseScreen(vm, backStack)
-                        }
 
                     Screen.Equalizer ->
                         NavEntry(screen) {
@@ -235,7 +221,6 @@ fun AppNavGraph(
                             LongPress(
                                 viewModel = airPodsViewModel,
                                 name = screen.bud,
-                                navigateToPurchase = ::navigateToPurchase
                             )
                         }
 

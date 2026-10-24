@@ -213,9 +213,6 @@
     <string name="listening_mode_transparency_description">외부 소리를 들려줍니다</string>
     <string name="listening_mode_adaptive_description">외부 소음을 상황에 맞게 조절합니다</string>
     <string name="listening_mode_noise_cancellation_description">외부 소리를 차단합니다</string>
-    <string name="unlock_advanced_features">고급 기능 잠금 해제</string>
-    <string name="buy_price">%s에 구매</string>
-    <string name="restore_purchases">구매 복원</string>
     <string name="ear_detection_description">AirPods를 빼면 오디오를 자동으로 멈추고, 다시 착용하면 재생을 계속합니다.</string>
     <string name="battery">배터리</string>
     <string name="battery_description">앱과 알림에서 정확한 배터리 상태를 확인합니다.</string>
@@ -226,7 +223,6 @@
     <string name="automatic_connection_description">AirPods 자동 연결을 활성화하고 설정합니다.</string>
     <string name="customizations_description">위젯에 휴대전화 배터리 표시, 대화 중 미디어 음량 조절 등 앱의 동작을 원하는 대로 설정할 수 있습니다. 앞으로 추가될 맞춤 설정도 이용할 수 있습니다.</string>
     <string name="support_the_development">개발 후원</string>
-    <string name="support_development_description">LibrePods는 한 명의 개발자가 만들고 있습니다. 업그레이드는 앱 개발을 이어가는 데 도움이 됩니다.</string>
     <string name="feature_availability_disclaimer">사용 가능한 기능은 AirPods 모델과 펌웨어 버전에 따라 다릅니다.</string>
     <string name="contact">문의</string>
     <string name="email">이메일</string>
@@ -241,7 +237,6 @@
     <string name="bypass_compatibility_check">호환성 검사 건너뛰기</string>
     <string name="bypass_compatiblity_check_confirmation">이 기기가 루트 권한 없이 앱을 지원하거나, Xposed에서 LibrePods 모듈을 활성화했는지 확인하셨나요?</string>
     <string name="not_supported">지원되지 않음</string>
-    <string name="name_your_own_price">(원하는 금액 선택)</string>
     <string name="compatibility_play_dialog_confirmation">플랫폼 제약으로 이 기기가 지원되지 않을 수 있으며 Xposed 프레임워크가 필요합니다. 계속하려면 아래 확인란을 선택하고 OK를 입력하세요.</string>
     <string name="type_ok_to_continue">계속하려면 "%s"를 입력하세요</string>
     <string name="proceed">계속</string>
@@ -261,7 +256,6 @@
     <string name="optimized_charging">최적화된 충전 한도</string>
     <string name="optimized_charging_description">AirPods는 일상적인 사용 패턴을 학습하여 최적화된 한도까지만 충전할지, 완전히 충전할지 결정할 수 있습니다. 충전 한도는 사용 패턴에 맞춰 조정되며 장기적으로 배터리 수명을 보호합니다.\n지원되지 않는 AirPods나 이전 펌웨어 버전에서는 이 설정이 적용되지 않을 수 있습니다.</string>
     <string name="enable_app_in_xposed_or_update_device">기기를 업데이트하거나 Xposed에서 LibrePods를 활성화한 후 앱을 다시 열어 계속하세요.</string>
-    <string name="play_foss_premium_banner">앱이 Google Play 버전으로 업데이트되어 %1$d일 후에 고급 기능이 비활성화됩니다. FOSS 버전을 계속 사용하려면 기존 설치 경로에서 업데이트하시고, 이 기간이 끝난 후 업그레이드를 직접 구매하거나, 이미 후원자인 경우 여기를 탭하여 프로모션 코드를 요청하세요.</string>
     <string name="custom">사용자 지정</string>
     <string name="recommended">권장</string>
     <string name="appearance">화면 스타일</string>

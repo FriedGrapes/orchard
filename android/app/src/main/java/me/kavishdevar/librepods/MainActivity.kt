@@ -48,7 +48,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.edit
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
-import com.google.android.play.core.review.ReviewManagerFactory
 import dev.chrisbanes.haze.materials.ExperimentalHazeMaterialsApi
 import me.kavishdevar.librepods.data.AirPodsNotifications
 import me.kavishdevar.librepods.data.ControlCommandRepository
@@ -154,30 +153,6 @@ fun Main() {
 
     val airPodsViewModel: AirPodsViewModel = viewModel()
 
-    LaunchedEffect(Unit) {
-        if (BuildConfig.PLAY_BUILD) {
-            val now = System.currentTimeMillis()
-            val firstConn =
-                sharedPreferences.getLong("first_connection_successful_time", 0L)
-
-            val alreadyPrompted =
-                sharedPreferences.getBoolean("review_prompted", false)
-
-            val oneDay = 24 * 60 * 60 * 1000L
-
-            if (
-                firstConn != 0L &&
-                !alreadyPrompted &&
-                (now - firstConn) > oneDay
-            ) {
-                triggerReviewFlow(context as? Activity ?: return@LaunchedEffect)
-
-                sharedPreferences.edit {
-                    putBoolean("review_prompted", true)
-                }
-            }
-        }
-    }
 
     val onboardingComplete = sharedPreferences.getBoolean("onboarding_complete", false)
 
@@ -233,13 +208,3 @@ fun Main() {
     )
 }
 
-private fun triggerReviewFlow(activity: Activity) {
-    val manager = ReviewManagerFactory.create(activity)
-    val request = manager.requestReviewFlow()
-    request.addOnCompleteListener { task ->
-        if (task.isSuccessful) {
-            val reviewInfo = task.result
-            manager.launchReviewFlow(activity, reviewInfo)
-        }
-    }
-}
