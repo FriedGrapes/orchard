@@ -1,0 +1,8 @@
+# 공개 저장소·리눅스 빌드에서 쓰이므로 줄 끝은 LF 로 고정한다(윈도우 bat 만 CRLF)
+* text=auto eol=lf
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.png binary
+*.otf binary
+*.ico binary
+*.jar binary

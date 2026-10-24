@@ -18,12 +18,14 @@ Write-Host "source: $repo @ $head"
 
 $work = Join-Path $env:TEMP "orchard-publish-$Version"
 if (Test-Path $work) { Remove-Item -Recurse -Force $work }
-git clone --quiet https://github.com/FriedGrapes/orchard.git $work; Run "clone"
+git -c core.autocrlf=false clone --quiet https://github.com/FriedGrapes/orchard.git $work; Run "clone"
+# 윈도우 git 의 줄 끝 바꾸기를 끈다(gradlew 가 CRLF 로 올라가 리눅스 빌드가 깨졌음)
+git -C $work config core.autocrlf false; Run "autocrlf off"
 
 # 공개 저장소의 파일을 비우고(.git 제외) 모노레포 Orchard/ 의 현재 커밋 내용으로 채운다
 Get-ChildItem $work -Force | Where-Object Name -ne '.git' | Remove-Item -Recurse -Force
 $tar = Join-Path $env:TEMP "orchard-$Version.tar"
-git -C $repo archive --format=tar -o $tar "HEAD:Orchard"; Run "archive"
+git -c core.autocrlf=false -C $repo archive --format=tar -o $tar "HEAD:Orchard"; Run "archive"
 tar -xf $tar -C $work; Run "extract"
 Remove-Item $tar
 
