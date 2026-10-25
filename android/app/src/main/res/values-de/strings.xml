@@ -40,12 +40,6 @@
     <string name="appwidget_text">BEISPIEL</string>
     <string name="add_widget">Widget hinzufügen</string>
     <string name="listening_mode_widget_description">Steuere den Hörmodus direkt vom Homescreen.</string>
-    <string name="island_connected_text">Verbunden</string>
-    <string name="island_connected_remote_text">Mit Linux verbunden</string>
-    <string name="island_taking_over_text">Verbunden</string>
-    <string name="island_moved_to_remote_text">Auf Linux übertragen</string>
-    <string name="island_moved_to_other_device_text">Auf %1$s übertragen</string>
-    <string name="island_moved_to_other_device_reversed_text">Aus Benachrichtigung verbinden</string>
     <string name="head_tracking">Kopf-Tracking</string>
     <string name="head_gestures_details">Nicke, um Anrufe anzunehmen, schüttle den Kopf, um sie abzulehnen.</string>
     <string name="general_settings_header">Allgemein</string>

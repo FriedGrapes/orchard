@@ -41,12 +41,6 @@
     <string name="appwidget_text">EXAMPLE</string>
     <string name="add_widget">Add widget</string>
     <string name="listening_mode_widget_description">Control Noise Control Mode directly from your Home Screen.</string>
-    <string name="island_connected_text">Connected</string>
-    <string name="island_connected_remote_text">Connected to Linux</string>
-    <string name="island_taking_over_text">Connected</string>
-    <string name="island_moved_to_remote_text">Moved to Linux</string>
-    <string name="island_moved_to_other_device_text">Moved to %1$s</string>
-    <string name="island_moved_to_other_device_reversed_text">Reconnect from notification</string>
     <string name="head_tracking">Head Tracking</string>
     <string name="head_gestures_details">Nod to answer calls, and shake your head to decline.</string>
     <string name="general_settings_header">General</string>
@@ -140,10 +134,6 @@
     <string name="show_phone_battery_in_widget">Show phone battery in widget</string>
     <string name="show_phone_battery_in_widget_description">Display your phone\'s battery level in the widget alongside AirPods battery</string>
     <string name="popup_animations">Popup Animations</string>
-    <string name="show_bottom_sheet_popup">Bottom sheet popup</string>
-    <string name="show_bottom_sheet_popup_description">Show the iOS-style modal popup at the bottom when AirPods connect.</string>
-    <string name="show_island_popup">Dynamic Island popup</string>
-    <string name="show_island_popup_description">Show the Dynamic Island-style popup at the top for connection and takeover events.</string>
     <string name="conversation_awareness_volume">Conversation Awareness Volume</string>
     <string name="quick_settings_tile">Quick Settings Tile</string>
     <string name="open_dialog_for_controlling">Open dialog for controlling</string>
@@ -306,4 +296,6 @@
     <string name="orchard_update_latest">You\'re up to date (v%1$s)</string>
     <string name="orchard_update_installing">Got v%1$s · tap the notification</string>
     <string name="orchard_update_failed">Couldn\'t check. Make sure you\'re online and try again.</string>
+    <string name="orchard_lid_card">Battery card when the case opens</string>
+    <string name="orchard_lid_card_description">Show the black battery card at the top when you open the AirPods case nearby. It closes when you close the case.</string>
 </resources>

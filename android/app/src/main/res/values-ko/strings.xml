@@ -40,12 +40,6 @@
     <string name="appwidget_text">예시</string>
     <string name="add_widget">위젯 추가</string>
     <string name="listening_mode_widget_description">홈 화면에서 소음 제어 모드를 바로 조절합니다.</string>
-    <string name="island_connected_text">연결됨</string>
-    <string name="island_connected_remote_text">Linux에 연결됨</string>
-    <string name="island_taking_over_text">연결됨</string>
-    <string name="island_moved_to_remote_text">Linux에서 사용 중</string>
-    <string name="island_moved_to_other_device_text">%1$s에서 사용 중</string>
-    <string name="island_moved_to_other_device_reversed_text">알림에서 다시 연결하세요</string>
     <string name="head_tracking">머리 추적</string>
     <string name="head_gestures_details">고개를 끄덕이면 전화를 받고, 좌우로 저으면 거절합니다.</string>
     <string name="general_settings_header">일반</string>
@@ -139,10 +133,6 @@
     <string name="show_phone_battery_in_widget">위젯에 휴대전화 배터리 표시</string>
     <string name="show_phone_battery_in_widget_description">위젯에 AirPods 배터리와 함께 휴대전화 배터리 잔량을 표시합니다</string>
     <string name="popup_animations">팝업 애니메이션</string>
-    <string name="show_bottom_sheet_popup">하단 팝업</string>
-    <string name="show_bottom_sheet_popup_description">AirPods가 연결되면 화면 하단에 iOS 스타일의 팝업을 표시합니다.</string>
-    <string name="show_island_popup">다이내믹 아일랜드 팝업</string>
-    <string name="show_island_popup_description">연결 또는 기기 간 연결 전환 시 화면 상단에 다이내믹 아일랜드 스타일의 팝업을 표시합니다.</string>
     <string name="conversation_awareness_volume">대화 중 미디어 음량</string>
     <string name="quick_settings_tile">빠른 설정 타일</string>
     <string name="open_dialog_for_controlling">탭하면 제어 창 열기</string>
@@ -296,4 +286,6 @@
     <string name="orchard_update_latest">최신 버전이에요 (v%1$s)</string>
     <string name="orchard_update_installing">v%1$s 받음 · 알림을 눌러 설치</string>
     <string name="orchard_update_failed">확인하지 못했어요. 인터넷 연결을 확인하고 다시 눌러 주세요.</string>
+    <string name="orchard_lid_card">케이스를 열면 배터리 카드</string>
+    <string name="orchard_lid_card_description">근처에서 에어팟 케이스를 열면 화면 위에 검정 배터리 카드를 띄워요. 케이스를 닫으면 사라져요.</string>
 </resources>

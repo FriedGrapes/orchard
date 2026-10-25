@@ -40,12 +40,6 @@
     <string name="appwidget_text">示例</string>
     <string name="add_widget">添加小组件</string>
     <string name="listening_mode_widget_description">直接在主屏幕上控制聆听模式。</string>
-    <string name="island_connected_text">已连接</string>
-    <string name="island_connected_remote_text">已连接到 Linux</string>
-    <string name="island_taking_over_text">已连接</string>
-    <string name="island_moved_to_remote_text">已切换到 Linux</string>
-    <string name="island_moved_to_other_device_text">已切换到 %1$s</string>
-    <string name="island_moved_to_other_device_reversed_text">从通知中重新连接</string>
     <string name="head_tracking">头部跟踪</string>
     <string name="head_gestures_details">点头接听来电，摇头拒接。</string>
     <string name="general_settings_header">通用</string>
@@ -141,10 +135,6 @@
     <string name="show_phone_battery_in_widget">在小组件中显示手机电量</string>
     <string name="show_phone_battery_in_widget_description">在小组件中与 AirPods 电量一同显示手机电量。</string>
     <string name="popup_animations">弹窗动画</string>
-    <string name="show_bottom_sheet_popup">底部弹窗</string>
-    <string name="show_bottom_sheet_popup_description">连接 AirPods 时在底部显示 iOS 风格的弹窗。</string>
-    <string name="show_island_popup">灵动岛弹窗</string>
-    <string name="show_island_popup_description">在顶部以灵动岛样式显示连接和接管事件的弹窗。</string>
     <string name="conversation_awareness_volume">对话感知音量</string>
     <string name="quick_settings_tile">快捷设置磁贴</string>
     <string name="open_dialog_for_controlling">打开控制对话框</string>

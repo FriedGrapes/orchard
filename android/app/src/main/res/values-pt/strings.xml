@@ -40,12 +40,6 @@
     <string name="appwidget_text">EXEMPLO</string>
     <string name="add_widget">Adicionar widget</string>
     <string name="listening_mode_widget_description">Controle o Modo de Controle de Ruído diretamente da sua Tela Inicial.</string>
-    <string name="island_connected_text">Conectado</string>
-    <string name="island_connected_remote_text">Conectado ao Linux</string>
-    <string name="island_taking_over_text">Conectado</string>
-    <string name="island_moved_to_remote_text">Movido para Linux</string>
-    <string name="island_moved_to_other_device_text">Movido para %1$s</string>
-    <string name="island_moved_to_other_device_reversed_text">Reconectar pela notificação</string>
     <string name="head_tracking">Rastreamento de Cabeça</string>
     <string name="head_gestures_details">Acene para atender chamadas e balance a cabeça para recusar.</string>
     <string name="general_settings_header">Geral</string>
@@ -209,8 +203,4 @@
     <string name="listening_mode_adaptive_description">Ajusta dinamicamente o ruído externo</string>
     <string name="listening_mode_noise_cancellation_description">Bloqueia sons externos</string>
     <string name="popup_animations">Animações de pop-up</string>
-    <string name="show_bottom_sheet_popup">Pop-up inferior</string>
-    <string name="show_bottom_sheet_popup_description">Exibe o pop-up estilo iOS na parte inferior quando os AirPods se conectam.</string>
-    <string name="show_island_popup">Pop-up Dynamic Island</string>
-    <string name="show_island_popup_description">Exibe o pop-up estilo Dynamic Island no topo da tela em eventos de conexão e transferência.</string>
 </resources>

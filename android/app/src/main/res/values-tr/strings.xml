@@ -40,12 +40,6 @@
     <string name="appwidget_text">ÖRNEK</string>
     <string name="add_widget">Widget ekle</string>
     <string name="listening_mode_widget_description">Gürültü Kontrol Modunu doğrudan Ana Ekranınızdan kontrol edin.</string>
-    <string name="island_connected_text">Bağlı</string>
-    <string name="island_connected_remote_text">Linux\'a bağlı</string>
-    <string name="island_taking_over_text">Bağlı</string>
-    <string name="island_moved_to_remote_text">Linux\'a taşındı</string>
-    <string name="island_moved_to_other_device_text">%1$s cihazına taşındı</string>
-    <string name="island_moved_to_other_device_reversed_text">Bildirimden yeniden bağlan</string>
     <string name="head_tracking">Kafa Takibi</string>
     <string name="head_gestures_details">Aramaları yanıtlamak için başınızı sallayın, reddetmek için başınızı sallayın.</string>
     <string name="general_settings_header">Genel</string>

@@ -277,7 +277,7 @@ fun AirPodsSettingsScreen(
                 // Orchard: 원본 BatteryView 대신 큰 그림 + 링 배터리 카드
                 DeviceHeroCard(
                     name = deviceName.text,
-                    model = state.instance?.model,
+                    model = state.artModel,
                     battery = state.battery,
                 )
             }

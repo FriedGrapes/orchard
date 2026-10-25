@@ -155,17 +155,10 @@ fun AppSettingsScreen(
 
             StyledList(title = stringResource(R.string.popup_animations)) {
                 StyledToggle(
-                    label = stringResource(R.string.show_bottom_sheet_popup),
-                    description = stringResource(R.string.show_bottom_sheet_popup_description),
+                    label = stringResource(R.string.orchard_lid_card),
+                    description = stringResource(R.string.orchard_lid_card_description),
                     checked = state.showBottomSheetPopup,
                     onCheckedChange = viewModel::setShowBottomSheetPopup,
-                )
-
-                StyledToggle(
-                    label = stringResource(R.string.show_island_popup),
-                    description = stringResource(R.string.show_island_popup_description),
-                    checked = state.showIslandPopup,
-                    onCheckedChange = viewModel::setShowIslandPopup,
                 )
             }
 

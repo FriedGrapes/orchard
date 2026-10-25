@@ -62,6 +62,8 @@ data class AirPodsUiState(
     val isLocallyConnected: Boolean = false,
 
     val instance: AirPodsInstance? = null,
+    /** Orchard: 카드 그림에 쓸 모델(모르면 null — 엉뚱한 기본 사진 대신 비워 둔다). */
+    val artModel: me.kavishdevar.librepods.data.AirPodsBase? = null,
     val capabilities: Set<Capability> = emptySet(),
 
     val controlStates: Map<ControlCommandIdentifiers, ByteArray> = emptyMap(),
@@ -532,6 +534,7 @@ class AirPodsViewModel(
             it.copy(
                 capabilities = instance.model.capabilities,
                 instance = instance,
+                artModel = service.artModel(),
                 modelName = instance.model.displayName,
                 actualModel = instance.actualModelNumber,
                 serialNumbers = listOf(

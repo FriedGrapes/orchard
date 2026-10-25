@@ -55,7 +55,7 @@ public static class AudioReconnector
             {
                 var iid = typeof(IKsControl).GUID;
                 // 제어 기능은 연결 단자가 아니라 블루투스 오디오 '필터 장치'에 있다: 필터 ID 로 장치를 다시 열어 꺼낸다
-                var enumerator = (IMMDeviceEnumerator)new MMDeviceEnumeratorComObject();
+                var enumerator = (IMMDeviceEnumerator)AudioCom.CreateEnumerator();
                 int ghr = enumerator.GetDevice(id, out var filterDevice);
                 int ahr = ghr < 0 ? ghr : filterDevice.Activate(ref iid, CLSCTX_ALL, IntPtr.Zero, out ks);
                 if (ahr < 0 || ks == IntPtr.Zero)
@@ -89,7 +89,7 @@ public static class AudioReconnector
     static void ForEachFilter(string address, Func<string, string, bool, IPart, bool> visit)
     {
         var addr = address.Replace(":", "").ToLowerInvariant();
-        var enumerator = (IMMDeviceEnumerator)new MMDeviceEnumeratorComObject();
+        var enumerator = (IMMDeviceEnumerator)AudioCom.CreateEnumerator();
         foreach (var flow in new[] { EDataFlow.eRender, EDataFlow.eCapture })
         {
             enumerator.EnumAudioEndpoints(flow, DEVICE_STATE_ACTIVE | DEVICE_STATE_UNPLUGGED, out var devices);
@@ -133,9 +133,6 @@ public static class AudioReconnector
 
     [StructLayout(LayoutKind.Sequential)]
     struct KsProperty { public Guid Set; public uint Id; public uint Flags; }
-
-    [ComImport, Guid("BCDE0395-E52F-467C-8E3D-C4579291692E")]
-    class MMDeviceEnumeratorComObject { }
 
     [ComImport, Guid("A95664D2-9614-4F35-A746-DE8DB63617E6"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     interface IMMDeviceEnumerator

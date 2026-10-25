@@ -18,6 +18,14 @@ public static class Program
         if (t >= 0 && t + 1 < args.Length)
         {
             if (args.Contains("--test-mute")) { using (SpeakerGuard.Engage()) { Thread.Sleep(1500); } Log.Write("--test-mute 끝"); return; }
+            // --test-auto: 실제 자동 전환과 같은 순서(스피커 음소거 → 다시 연결)
+            if (args.Contains("--test-auto"))
+            {
+                bool done;
+                using (SpeakerGuard.Engage()) { done = AudioReconnector.Reconnect(args[t + 1]); }
+                Log.Write($"--test-auto {args[t + 1]} → {(done ? "명령 전달됨" : "실패")}");
+                return;
+            }
             bool ok = AudioReconnector.Reconnect(args[t + 1]);
             Log.Write($"--test-reconnect {args[t + 1]} → {(ok ? "명령 전달됨" : "실패")}");
             return;

@@ -34,14 +34,19 @@ fun budToCaseRatio(model: AirPodsBase?): Float = when (model?.budsRes) {
 /** 기기 그림 한 줄: 알맹이와 케이스를 실제 크기 비율로, 바닥을 맞춰 나란히 놓는다. 헤드폰은 한 장. */
 @Composable
 fun DeviceArtRow(model: AirPodsBase?, height: Dp, modifier: Modifier = Modifier) {
-    val buds = painterResource(model?.budsRes ?: R.drawable.airpods_pro_2_buds)
-    if (model?.isHeadphones == true) {
+    // 모델을 아직 모르면 자리만 잡아 둔다(엉뚱한 기본 사진을 보여 주지 않는다). 알게 되면 카드의 등장 효과로 떠오른다.
+    if (model == null) {
+        androidx.compose.foundation.layout.Spacer(modifier.fillMaxWidth().height(height))
+        return
+    }
+    val buds = painterResource(model.budsRes)
+    if (model.isHeadphones) {
         Row(modifier.fillMaxWidth().height(height), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
             Image(buds, model.name, contentScale = ContentScale.Fit, modifier = Modifier.height(height))
         }
         return
     }
-    val case = painterResource(model?.caseRes ?: R.drawable.airpods_pro_2_case)
+    val case = painterResource(model.caseRes)
     val gap = 18.dp
     BoxWithConstraints(modifier.fillMaxWidth().height(height), contentAlignment = Alignment.BottomCenter) {
         val caseAr = case.intrinsicSize.width / case.intrinsicSize.height

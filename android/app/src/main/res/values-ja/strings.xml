@@ -41,12 +41,6 @@
     <string name="appwidget_text">サンプル</string>
     <string name="add_widget">ウィジェットを追加</string>
     <string name="listening_mode_widget_description">ホーム画面から直接リスニングモードを操作します。</string>
-    <string name="island_connected_text">接続済み</string>
-    <string name="island_connected_remote_text">Linuxに接続済み</string>
-    <string name="island_taking_over_text">接続済み</string>
-    <string name="island_moved_to_remote_text">Linuxに切り替えました</string>
-    <string name="island_moved_to_other_device_text">%1$sに切り替えました</string>
-    <string name="island_moved_to_other_device_reversed_text">通知から再接続</string>
     <string name="head_tracking">ヘッドトラッキング</string>
     <string name="head_gestures_details">うなずいて電話に出たり、首を横に振って着信を拒否したりできます。</string>
     <string name="general_settings_header">一般</string>
@@ -140,10 +134,6 @@
     <string name="show_phone_battery_in_widget">ウィジェットにスマートフォンのバッテリーを表示</string>
     <string name="show_phone_battery_in_widget_description">AirPodsのバッテリーと並べて、スマートフォンのバッテリー残量をウィジェットに表示します</string>
     <string name="popup_animations">ポップアップアニメーション</string>
-    <string name="show_bottom_sheet_popup">ボトムシートポップアップ</string>
-    <string name="show_bottom_sheet_popup_description">AirPodsの接続時に画面下部にiOSスタイルのモーダルポップアップを表示します。</string>
-    <string name="show_island_popup">Dynamic Islandポップアップ</string>
-    <string name="show_island_popup_description">接続時や引き継ぎ時に画面上部にDynamic Islandスタイルのポップアップを表示します。</string>
     <string name="conversation_awareness_volume">会話感知の音量</string>
     <string name="quick_settings_tile">クイック設定タイル</string>
     <string name="open_dialog_for_controlling">操作用のダイアログを開く</string>

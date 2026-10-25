@@ -313,6 +313,30 @@ object AirPodsModels {
         AirPodsMax2()
     )
 
+    /** 케이스를 열 때 나오는 블루투스 광고(BLEManager 의 모델 이름) → 모델. 5·5 무선충전처럼 광고로는 못 가르는 건 기본형. */
+    fun fromBleName(name: String?): AirPodsBase? = when (name) {
+        "AirPods 1" -> AirPods()
+        "AirPods 2" -> AirPods2()
+        "AirPods 3" -> AirPods3()
+        "AirPods 4" -> AirPods4()
+        "AirPods 4 (ANC)" -> AirPods4ANC()
+        "AirPods 5" -> AirPods5()
+        "AirPods Pro" -> AirPodsPro1()
+        "AirPods Pro 2" -> AirPodsPro2Lightning()
+        "AirPods Pro 2 (USB-C)" -> AirPodsPro2USBC()
+        "AirPods Pro 3" -> AirPodsPro3()
+        "AirPods Max" -> AirPodsMax()
+        "AirPods Max (USB-C)" -> AirPodsMaxUSBC()
+        "AirPods Max 2" -> AirPodsMax2()
+        else -> null
+    }
+
+    /**
+     * Orchard: 그림에 쓸 모델. 연결된 기기의 진짜 정보 → 지금 근처 광고의 모델 → 모름(null, 그림 자리 비움).
+     * 예전에는 모르면 프로 2(A3049)로 떨어져 연결 직후 잠깐 엉뚱한 사진이 보였다.
+     */
+    fun guess(real: AirPodsBase?, nearbyBleName: String?): AirPodsBase? = real ?: fromBleName(nearbyBleName)
+
     fun getModelByModelNumber(modelNumber: String): AirPodsBase? {
         return models.find { modelNumber in it.modelNumber }
     }

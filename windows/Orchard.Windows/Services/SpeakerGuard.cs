@@ -15,7 +15,7 @@ public sealed class SpeakerGuard : IDisposable
     {
         try
         {
-            var enumerator = (IMMDeviceEnumerator)new MMDeviceEnumeratorComObject();
+            var enumerator = (IMMDeviceEnumerator)AudioCom.CreateEnumerator();
             if (enumerator.GetDefaultAudioEndpoint(0 /* eRender */, 0 /* eConsole */, out var device) < 0) return;
             var iid = typeof(IAudioEndpointVolume).GUID;
             if (device.Activate(ref iid, 0x17, IntPtr.Zero, out var obj) < 0) return;
@@ -34,9 +34,6 @@ public sealed class SpeakerGuard : IDisposable
         try { if (_volume != null && !_wasMuted) _volume.SetMute(false, Guid.Empty); }
         catch (Exception e) { Log.Write($"스피커 음소거 풀기 실패: {e.Message}"); }
     }
-
-    [ComImport, Guid("BCDE0395-E52F-467C-8E3D-C4579291692E")]
-    class MMDeviceEnumeratorComObject { }
 
     [ComImport, Guid("A95664D2-9614-4F35-A746-DE8DB63617E6"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     interface IMMDeviceEnumerator

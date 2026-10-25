@@ -33,7 +33,6 @@ data class AppSettingsUiState(
     val vendorIdHook: Boolean = false,
     val connectionSuccessful: Boolean = false,
     val showBottomSheetPopup: Boolean = true,
-    val showIslandPopup: Boolean = true,
     val m3eEnabled: Boolean = false
 )
 
@@ -81,7 +80,6 @@ class AppSettingsViewModel(application: Application) : AndroidViewModel(applicat
                 vendorIdHook = xposedRemotePref.getBoolean("vendor_id_hook", false),
                 connectionSuccessful = sharedPreferences.getBoolean("connection_successful", false),
                 showBottomSheetPopup = sharedPreferences.getBoolean("show_bottom_sheet_popup", true),
-                showIslandPopup = sharedPreferences.getBoolean("show_island_popup", true),
                 m3eEnabled = sharedPreferences.getBoolean("m3e_enabled", true)
             )
         }
@@ -176,11 +174,6 @@ class AppSettingsViewModel(application: Application) : AndroidViewModel(applicat
     fun setShowBottomSheetPopup(enabled: Boolean) {
         sharedPreferences.edit { putBoolean("show_bottom_sheet_popup", enabled) }
         _uiState.update { it.copy(showBottomSheetPopup = enabled) }
-    }
-
-    fun setShowIslandPopup(enabled: Boolean) {
-        sharedPreferences.edit { putBoolean("show_island_popup", enabled) }
-        _uiState.update { it.copy(showIslandPopup = enabled) }
     }
 
     fun setm3eEnabled(enabled: Boolean) {

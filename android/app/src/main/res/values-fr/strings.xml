@@ -40,12 +40,6 @@
     <string name="appwidget_text">EXEMPLE</string>
     <string name="add_widget">Ajouter le widget</string>
     <string name="listening_mode_widget_description">Contrôlez le mode de réduction de bruit directement depuis votre écran d\'accueil.</string>
-    <string name="island_connected_text">Connecté</string>
-    <string name="island_connected_remote_text">Connecté à Linux</string>
-    <string name="island_taking_over_text">Connecté</string>
-    <string name="island_moved_to_remote_text">Déplacé vers Linux</string>
-    <string name="island_moved_to_other_device_text">Déplacé vers %1$s</string>
-    <string name="island_moved_to_other_device_reversed_text">Reconnecté depuis la notification</string>
     <string name="head_tracking">Suivi de la tête</string>
     <string name="head_gestures_details">Hochez la tête pour répondre aux appels, secouez-la pour refuser.</string>
     <string name="general_settings_header">Général</string>
@@ -209,8 +203,4 @@
     <string name="listening_mode_adaptive_description">Ajuster dynamiquement les sons extérieurs</string>
     <string name="listening_mode_noise_cancellation_description">Bloquer les sons extérieurs</string>
     <string name="popup_animations">Animations contextuelles</string>
-    <string name="show_bottom_sheet_popup">Fenêtre contextuelle en bas</string>
-    <string name="show_bottom_sheet_popup_description">Afficher la fenêtre contextuelle de style iOS en bas de l\'écran lors de la connexion des AirPods.</string>
-    <string name="show_island_popup">Fenêtre Dynamic Island</string>
-    <string name="show_island_popup_description">Afficher la fenêtre de style Dynamic Island en haut de l\'écran pour les événements de connexion et de transfert.</string>
 </resources>

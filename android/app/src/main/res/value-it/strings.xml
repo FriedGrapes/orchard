@@ -41,12 +41,6 @@
         <string name="appwidget_text">ESEMPIO</string>
         <string name="add_widget">Aggiungi widget</string>
         <string name="listening_mode_widget_description">Controlla la Modalità di Controllo del Rumore direttamente dalla tua Schermata Principale.</string>
-        <string name="island_connected_text">Connesso</string>
-        <string name="island_connected_remote_text">Connesso a Linux</string>
-        <string name="island_taking_over_text">Connesso</string>
-        <string name="island_moved_to_remote_text">Spostato su Linux</string>
-        <string name="island_moved_to_other_device_text">Spostato su %1$s</string>
-        <string name="island_moved_to_other_device_reversed_text">Riconnetti dalla notifica</string>
         <string name="head_tracking">Tracciamento della Testa</string>
         <string name="head_gestures_details">Annuisci per rispondere alle chiamate e scuoti la testa per rifiutarle.</string>
         <string name="general_settings_header">Generale</string>
