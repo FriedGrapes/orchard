@@ -1,172 +1,113 @@
-# Orchard 앱 아이콘 — 깊은 검정 바탕 + 진주빛 이어버드 + 에메랄드 잎. 두 OS 공통 원본.
+# Orchard 앱 아이콘 — "한 쌍이 만든 잎": 이어버드 두 알이 겹친 자리가 잎이 된다. 두 OS 공통 원본.
+# (graphic-design-rules / logo-design 절차로 정함. 시안·과정은 NAS Orchard/_docs/그래픽/앱아이콘/)
 #   python make_icon.py <출력 폴더>
-# 결과: icon_1024.png(완성 정사각, 둥근 모서리 없음 — OS가 깎음), fg_432.png·bg_432.png·mono_432.png(안드로이드 적응형),
-#       orchard.ico(윈도우, 둥근 사각 포함), orchard_256.png
+# 결과: orchard_mark.svg(심볼 원본), icon_1024.png(타일), orchard.ico·orchard_256.png(윈도우),
+#       fg_432.png·bg_432.png·mono_432.png(안드로이드 적응형 아이콘, 108dp 캔버스의 xxxhdpi)
 import math, os, sys
-from PIL import Image, ImageDraw, ImageFilter, ImageChops
+from PIL import Image
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from icon_concepts import render  # Chrome 으로 SVG → PNG
 
 OUT = sys.argv[1] if len(sys.argv) > 1 else "."
-S = 2048  # 작업 해상도
+
+TILE = ("#FBFBFC", "#EEEFF2")   # 위·아래 — 거의 평평한 흰 타일
+MARK = "#141517"
+LEAF = "#2FB55A"
+
+# 심볼 기하(256 칸, 바로 쓸 좌표). 원 둘 · 줄기 둘 · 겹친 렌즈.
+R = 58.0
+C1 = (94.55, 126.4)
+C2 = (150.55, 84.4)
+STEM_W, STEM_L, EDGE_DEG, STEM_DEG = 24.0, 58.0, 50.0, 22.0
 
 
-def lin(w, h, stops, angle=90):
-    """세로(90)·가로(0) 선형 그라데이션."""
-    g = Image.new("RGBA", (w, h))
-    px = g.load()
-    for y in range(h):
-        for x in range(w):
-            t = (y / (h - 1)) if angle == 90 else (x / (w - 1))
-            for (t0, c0), (t1, c1) in zip(stops, stops[1:]):
-                if t0 <= t <= t1:
-                    k = (t - t0) / (t1 - t0 or 1)
-                    px[x, y] = tuple(int(c0[i] + (c1[i] - c0[i]) * k) for i in range(4))
-                    break
-    return g
+def circle(c, r):
+    x, y = c
+    return f"M{x + r:.2f},{y:.2f} A{r:.2f},{r:.2f} 0 1 1 {x - r:.2f},{y:.2f} A{r:.2f},{r:.2f} 0 1 1 {x + r:.2f},{y:.2f} Z"
 
 
-def radial(size, center, radius, inner, outer):
-    w, h = size
-    g = Image.new("RGBA", size)
-    px = g.load()
-    for y in range(h):
-        for x in range(w):
-            d = min(1.0, math.hypot(x - center[0], y - center[1]) / radius)
-            d = d * d * (3 - 2 * d)
-            px[x, y] = tuple(int(inner[i] + (outer[i] - inner[i]) * d) for i in range(4))
-    return g
+def stem(c):
+    """원 가장자리(아래 오른쪽)에서 비스듬히 뻗는 줄기(끝이 둥근 막대)."""
+    t = math.radians(EDGE_DEG)
+    cx, cy = c[0] + (R - STEM_W / 2) * math.sin(t), c[1] + (R - STEM_W / 2) * math.cos(t)
+    a = math.radians(STEM_DEG); dx, dy = math.sin(a), math.cos(a); nx, ny = dy, -dx
+    r = STEM_W / 2
+    ex, ey = cx + dx * STEM_L, cy + dy * STEM_L
+    p1, p2 = (cx + nx * r, cy + ny * r), (ex + nx * r, ey + ny * r)
+    p3, p4 = (ex - nx * r, ey - ny * r), (cx - nx * r, cy - ny * r)
+    return (f"M{p1[0]:.2f},{p1[1]:.2f} L{p2[0]:.2f},{p2[1]:.2f} A{r:.2f},{r:.2f} 0 0 1 {p3[0]:.2f},{p3[1]:.2f} "
+            f"L{p4[0]:.2f},{p4[1]:.2f} A{r:.2f},{r:.2f} 0 0 1 {p1[0]:.2f},{p1[1]:.2f} Z")
 
 
-def mask_from(draw_fn, size):
-    m = Image.new("L", size, 0)
-    draw_fn(ImageDraw.Draw(m))
+def lens():
+    """두 원이 겹친 렌즈(잎)를 원호 두 개로."""
+    (x1, y1), (x2, y2) = C1, C2
+    d = math.hypot(x2 - x1, y2 - y1)
+    a = d / 2; h = math.sqrt(R * R - a * a)
+    mx, my = x1 + (x2 - x1) * a / d, y1 + (y2 - y1) * a / d
+    px, py = mx + h * (y2 - y1) / d, my - h * (x2 - x1) / d
+    qx, qy = mx - h * (y2 - y1) / d, my + h * (x2 - x1) / d
+    return (f"M{px:.2f},{py:.2f} A{R:.2f},{R:.2f} 0 0 1 {qx:.2f},{qy:.2f} "
+            f"A{R:.2f},{R:.2f} 0 0 1 {px:.2f},{py:.2f} Z")
+
+
+def mark_group(scale, cx, cy, fill=MARK, leaf=LEAF):
+    """심볼을 (cx,cy) 가운데에 scale 배로. leaf=None 이면 렌즈는 빈 구멍."""
+    bx0, by0, bx1, by1 = 36.6, 26.4, 219.4, 221.6          # 심볼 테두리 상자(256 칸, svg_audit 로 잰 값)
+    ox, oy = (bx0 + bx1) / 2, (by0 + by1) / 2
+    body = (f'<path fill-rule="evenodd" d="{circle(C1, R)} {circle(C2, R)}"/>'
+            f'<path d="{stem(C1)}"/><path d="{stem(C2)}"/>')
+    lf = f'<path fill="{leaf}" d="{lens()}"/>' if leaf else ""
+    return (f'<g transform="translate({cx:.2f} {cy:.2f}) scale({scale:.4f}) translate({-ox:.2f} {-oy:.2f})" fill="{fill}">'
+            f'{body}{lf}</g>')
+
+
+def svg(inner, size=1024, vb=256):
+    return f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {vb} {vb}" width="{size}" height="{size}">{inner}</svg>'
+
+
+def tile_bg():
+    return (f'<defs><linearGradient id="t" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="{TILE[0]}"/>'
+            f'<stop offset="1" stop-color="{TILE[1]}"/></linearGradient></defs><rect width="256" height="256" fill="url(#t)"/>')
+
+
+# 심볼이 타일 폭의 약 52%를 차지하고, 눈으로 본 가운데(기하 가운데보다 살짝 위)에 놓인다
+MARK_SCALE = 0.73
+OPTICAL_Y = 125.0
+
+
+def squircle(S, n=5.0):
+    m = Image.new("L", (S, S), 0); px = m.load(); r = S / 2
+    for y in range(S):
+        for x in range(S):
+            if (abs(x - r + .5) / r) ** n + (abs(y - r + .5) / r) ** n <= 1: px[x, y] = 255
     return m
-
-
-def background(size):
-    w, h = size
-    bg = radial(size, (w * 0.5, h * 0.30), w * 0.95, (44, 47, 54, 255), (6, 7, 9, 255))
-    # 아래쪽에 아주 옅은 초록 반사
-    glow = radial(size, (w * 0.5, h * 1.05), w * 0.75, (24, 70, 48, 120), (0, 0, 0, 0))
-    bg.alpha_composite(glow)
-    return bg
-
-
-def earbud_layer(size):
-    """진주빛 이어버드(머리 + 줄기) + 잎. size 안에서 중앙 61%(적응형 안전 영역)에 들어오게."""
-    w, h = size
-    layer = Image.new("RGBA", size, (0, 0, 0, 0))
-    cx, cy = w * 0.45, h * 0.56
-    u = w / 1000.0 * 0.8
-
-    # --- 모양 마스크 (기울이기 전 똑바로 세운 상태) ---
-    def bud_shape(d):
-        d.ellipse([cx - 150 * u, cy - 260 * u, cx + 150 * u, cy - 10 * u], fill=255)        # 머리
-        d.ellipse([cx + 20 * u, cy - 200 * u, cx + 200 * u, cy - 40 * u], fill=255)         # 귀 쪽 볼록
-        d.rounded_rectangle([cx - 62 * u, cy - 120 * u, cx + 62 * u, cy + 330 * u], radius=62 * u, fill=255)  # 줄기
-    shape = mask_from(bud_shape, size)
-
-    # 진주빛 몸통: 왼쪽 위 밝고 오른쪽 아래 은은한 회청색
-    body = lin(w, h, [(0, (255, 255, 255, 255)), (0.55, (236, 238, 242, 255)), (1, (196, 202, 212, 255))], angle=0)
-    body.putalpha(shape)
-    # 안쪽 그림자(입체감)
-    inner = shape.filter(ImageFilter.GaussianBlur(40 * u))
-    shade = Image.new("RGBA", size, (120, 128, 142, 0))
-    shade.putalpha(ImageChops.subtract(shape, inner).point(lambda v: int(v * 0.55)))
-    body.alpha_composite(shade)
-    # 하이라이트(왼쪽 위 줄무늬)
-    hl = mask_from(lambda d: d.ellipse([cx - 120 * u, cy - 240 * u, cx - 10 * u, cy - 150 * u], fill=255), size)
-    hl = hl.filter(ImageFilter.GaussianBlur(26 * u))
-    hli = Image.new("RGBA", size, (255, 255, 255, 0)); hli.putalpha(hl.point(lambda v: int(v * 0.9)))
-    body.alpha_composite(hli)
-    # 그릴(검은 타원) — 귀 쪽
-    grill = mask_from(lambda d: d.ellipse([cx + 92 * u, cy - 150 * u, cx + 150 * u, cy - 92 * u], fill=255), size)
-    gl = Image.new("RGBA", size, (28, 30, 34, 255)); gl.putalpha(grill)
-    body.alpha_composite(gl)
-    # 줄기 끝 은색 띠
-    tip = mask_from(lambda d: d.rounded_rectangle([cx - 62 * u, cy + 290 * u, cx + 62 * u, cy + 330 * u], radius=30 * u, fill=255), size)
-    tipc = lin(w, h, [(0, (210, 214, 220, 255)), (1, (150, 156, 166, 255))], angle=0); tipc.putalpha(ImageChops.multiply(tip, shape))
-    body.alpha_composite(tipc)
-
-    # 바닥 그림자
-    sh = shape.filter(ImageFilter.GaussianBlur(50 * u)).point(lambda v: int(v * 0.55))
-    shadow = Image.new("RGBA", size, (0, 0, 0, 0)); shadow.putalpha(sh)
-    layer.alpha_composite(shadow, (int(18 * u), int(40 * u)))
-    layer.alpha_composite(body)
-
-    # --- 잎 (머리 오른쪽 위에서 돋아남) ---
-    leaf = Image.new("RGBA", size, (0, 0, 0, 0))
-    lx, ly = cx + 40 * u, cy - 270 * u
-    def leaf_shape(d):
-        pts = []
-        for k in range(0, 61):
-            t = k / 60
-            a = math.pi * t
-            r = 120 * u * math.sin(a) ** 0.9
-            pts.append((lx + 250 * u * t, ly - r * 0.62 + (-170 * u * t)))
-        for k in range(60, -1, -1):
-            t = k / 60
-            a = math.pi * t
-            r = 120 * u * math.sin(a) ** 0.9
-            pts.append((lx + 250 * u * t, ly + r * 0.38 + (-170 * u * t)))
-        d.polygon(pts, fill=255)
-    lm = mask_from(leaf_shape, size)
-    leafc = lin(w, h, [(0, (110, 231, 160, 255)), (0.5, (52, 199, 120, 255)), (1, (22, 128, 74, 255))], angle=0)
-    leafc.putalpha(lm)
-    vein = mask_from(lambda d: d.line([(lx + 20 * u, ly - 8 * u), (lx + 225 * u, ly - 153 * u)], fill=255, width=int(9 * u)), size)
-    veinc = Image.new("RGBA", size, (220, 255, 232, 0)); veinc.putalpha(ImageChops.multiply(vein, lm).point(lambda v: int(v * 0.6)))
-    leafc.alpha_composite(veinc)
-    leaf_sh = lm.filter(ImageFilter.GaussianBlur(30 * u)).point(lambda v: int(v * 0.4))
-    ls = Image.new("RGBA", size, (0, 0, 0, 0)); ls.putalpha(leaf_sh)
-    leaf.alpha_composite(ls, (int(10 * u), int(24 * u)))
-    leaf.alpha_composite(leafc)
-    # 잎자루
-    stem = mask_from(lambda d: d.line([(cx + 10 * u, cy - 245 * u), (lx + 20 * u, ly - 14 * u)], fill=255, width=int(14 * u)), size)
-    stc = Image.new("RGBA", size, (40, 150, 90, 255)); stc.putalpha(stem)
-    layer.alpha_composite(stc)
-    layer.alpha_composite(leaf)
-
-    # 전체를 살짝 기울여(오른쪽으로 14도) 생동감
-    layer = layer.rotate(-14, resample=Image.BICUBIC, center=(cx, cy))
-    mono_mask = ImageChops.lighter(shape, lm).rotate(-14, resample=Image.BICUBIC, center=(cx, cy))
-    return layer, mono_mask
 
 
 def main():
     os.makedirs(OUT, exist_ok=True)
-    size = (S, S)
-    bg = background(size)
-    fg, mono = earbud_layer(size)
+    p = lambda n: os.path.join(OUT, n)
+    open(p("orchard_mark.svg"), "w", encoding="utf-8").write(
+        svg('<title>Orchard</title>' + mark_group(1.0, 128, 124), 256))
 
-    full = bg.copy(); full.alpha_composite(fg)
-    full.resize((1024, 1024), Image.LANCZOS).save(os.path.join(OUT, "icon_1024.png"))
+    # 타일 완성본(윈도우·스토어용)
+    render(svg(tile_bg() + mark_group(MARK_SCALE, 128, OPTICAL_Y)), p("icon_1024.png"))
+    full = Image.open(p("icon_1024.png")).convert("RGBA").resize((1024, 1024), Image.LANCZOS)
+    sq = full.copy(); sq.putalpha(squircle(1024))
+    sq.resize((256, 256), Image.LANCZOS).save(p("orchard_256.png"))
+    sq.resize((512, 512), Image.LANCZOS).save(p("orchard_512.png"))
+    sq.resize((256, 256), Image.LANCZOS).save(p("orchard.ico"), sizes=[(16, 16), (24, 24), (32, 32), (48, 48), (64, 64), (128, 128), (256, 256)])
 
-    # 안드로이드 적응형: 108dp 캔버스 → 432px(xxxhdpi). 안전 영역 안에 들어가게 내용을 72%로 줄여 가운데
-    def adaptive(img, scale=0.9):
-        c = Image.new("RGBA", size, (0, 0, 0, 0))
-        small = img.resize((int(S * scale), int(S * scale)), Image.LANCZOS)
-        c.alpha_composite(small, ((S - small.width) // 2, (S - small.height) // 2))
-        return c.resize((432, 432), Image.LANCZOS)
-    adaptive(fg).save(os.path.join(OUT, "fg_432.png"))
-    bg.resize((432, 432), Image.LANCZOS).save(os.path.join(OUT, "bg_432.png"))
-    m = Image.new("RGBA", size, (255, 255, 255, 0)); m.putalpha(mono)
-    adaptive(m).save(os.path.join(OUT, "mono_432.png"))
-
-    # 윈도우·일반: 애플식 둥근 사각(연속 곡률에 가까운 슈퍼 타원)으로 깎은 것
-    def squircle(n=5.0):
-        mk = Image.new("L", size, 0)
-        px = mk.load()
-        r = S / 2
-        for y in range(S):
-            for x in range(S):
-                dx, dy = abs(x - r + 0.5) / r, abs(y - r + 0.5) / r
-                if dx ** n + dy ** n <= 1: px[x, y] = 255
-        return mk
-    sq = full.copy(); sq.putalpha(squircle())
-    sq.resize((256, 256), Image.LANCZOS).save(os.path.join(OUT, "orchard_256.png"))
-    sq.resize((256, 256), Image.LANCZOS).save(os.path.join(OUT, "orchard.ico"),
-                                              sizes=[(16, 16), (24, 24), (32, 32), (48, 48), (64, 64), (128, 128), (256, 256)])
-    sq.resize((512, 512), Image.LANCZOS).save(os.path.join(OUT, "orchard_512.png"))
+    # 안드로이드 적응형: 108dp 캔버스 중 보이는 곳은 가운데 72dp. 타일과 같은 비율이 되게 심볼을 72/108 로 줄인다.
+    k = 72 / 108
+    render(svg(mark_group(MARK_SCALE * k, 128, 128 + (OPTICAL_Y - 128) * k)), p("fg_1024.png"))
+    render(svg(tile_bg()), p("bg_1024.png"))
+    render(svg(mark_group(MARK_SCALE * k, 128, 128 + (OPTICAL_Y - 128) * k, fill="#FFFFFF", leaf=None)), p("mono_1024.png"))
+    for n in ("fg", "bg", "mono"):
+        Image.open(p(f"{n}_1024.png")).convert("RGBA").resize((432, 432), Image.LANCZOS).save(p(f"{n}_432.png"))
     print("ok")
 
 
-main()
+if __name__ == "__main__":
+    main()
