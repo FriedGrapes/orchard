@@ -33,7 +33,9 @@ public static class AudioReconnector
     /// 퀄컴 칩 PC(서피스 프로 등)는 실제 소리를 블루투스 주소가 안 들어간 별도 경로(qcasd#a2dpspeaker…)로 내보낸다.
     /// 그래서 주소로 찾은 끝점의 '컨테이너 ID'(같은 물리 기기면 같음)로 활성 스테레오 끝점을 고른다.
     /// </summary>
-    public static string? ActiveStereoEndpoint(string address) => OnSta(() =>
+    /// <param name="name">블루투스 기기 이름(예: "AirPods"). 끝점의 기기 이름과 같으면 내 것으로 본다 —
+    /// 서피스는 다시 연결할 때마다 새 컨테이너 ID 의 끝점을 만들어, 기억한 컨테이너로는 못 찾고 10초를 넘겼다(0.2.0 실기).</param>
+    public static string? ActiveStereoEndpoint(string address, string? name = null) => OnSta(() =>
     {
         RememberContainers(address);
         Containers.TryGetValue(Key(address), out var known);
@@ -43,7 +45,9 @@ public static class AudioReconnector
             if (!active || !endpointId.StartsWith("{0.0.0.")) return false;
             var f = filterId.ToLowerInvariant();
             bool stereo = f.Contains("0000110b") || f.Contains("a2dp");
-            bool mine = f.Contains(Key(address)) || (known != null && ContainerId(device) is Guid g && known.Contains(g));
+            bool mine = f.Contains(Key(address))
+                        || (!string.IsNullOrEmpty(name) && string.Equals(InterfaceName(device), name, StringComparison.OrdinalIgnoreCase))
+                        || (known != null && ContainerId(device) is Guid g && known.Contains(g));
             if (stereo && mine) { found = endpointId; return true; }
             return false;
         });
@@ -93,11 +97,29 @@ public static class AudioReconnector
         ForEachFilter("", (endpointId, filterId, active, device) =>
         {
             if (endpointId.StartsWith("{0.0.0."))
-                Log.Write($"재생 끝점 {endpointId[^38..]} · 활성 {active} · 컨테이너 {ContainerId(device)} · {filterId[..Math.Min(70, filterId.Length)]}");
+                Log.Write($"재생 끝점 {endpointId[^38..]} · {InterfaceName(device)} · 활성 {active} · 컨테이너 {ContainerId(device)} · {filterId[..Math.Min(70, filterId.Length)]}");
             return false;
         });
         return true;
     });
+
+    /// <summary>끝점의 PKEY_DeviceInterface_FriendlyName — "헤드폰(AirPods)"의 괄호 안 기기 이름("AirPods").</summary>
+    static string? InterfaceName(IMMDevice device)
+    {
+        IntPtr storePtr = IntPtr.Zero;
+        try
+        {
+            device.OpenPropertyStore(0 /* STGM_READ */, out storePtr);
+            var store = (IPropertyStore)Marshal.GetObjectForIUnknown(storePtr);
+            var key = new PropertyKey { Fmtid = new Guid("026E516E-B814-414B-83CD-856D6FEF4822"), Pid = 2 };
+            var pv = new PropVariant();
+            if (store.GetValue(ref key, ref pv) < 0) return null;
+            try { return pv.Vt == 31 /* VT_LPWSTR */ && pv.Ptr != IntPtr.Zero ? Marshal.PtrToStringUni(pv.Ptr) : null; }
+            finally { PropVariantClear(ref pv); }
+        }
+        catch { return null; }
+        finally { if (storePtr != IntPtr.Zero) Marshal.Release(storePtr); }
+    }
 
     /// <summary>끝점의 PKEY_Device_ContainerId — 같은 물리 기기의 끝점들은 같은 값을 가진다.</summary>
     static Guid? ContainerId(IMMDevice device)

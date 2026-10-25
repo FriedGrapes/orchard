@@ -258,6 +258,10 @@ public partial class App : Application
                     : $"{owner?.Name ?? s.Model.Name}\n왼쪽 {s.Left?.ToString() ?? "–"}% · 오른쪽 {s.Right?.ToString() ?? "–"}% · 케이스 {s.Case?.ToString() ?? "–"}%";
         }
 
+        // 이 PC에 안 붙어 있는데 귀에 꽂은 순간: 여기서 재생 중이면 가져온다
+        if (s != null && _prev != null && s.ModelId == _prev.ModelId && !connected && !_prev.AnyInEar && s.AnyInEar)
+            _switcher?.OnEarIn();
+
         if (s != null && _prev != null && s.ModelId == _prev.ModelId && connected)
         {
             if (_settings.PauseOnRemove && _prev.AnyInEar && !s.AnyInEar) _ = _media.PauseAsync();

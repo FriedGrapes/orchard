@@ -65,6 +65,21 @@ public sealed class DeviceSwitcher
         _ = AutoAsync(s);
     }
 
+    /// <summary>
+    /// 이 PC에서 이미 재생 중일 때(스피커로) 에어팟을 귀에 꽂으면 가져온다 — 에어팟이 먼저 폰에 붙어도.
+    /// 예전에는 '재생을 시작하는 순간'만 봐서, 재생 중에 꽂으면 폰에 붙은 채로 있었다(0.2.0 실기).
+    /// </summary>
+    public void OnEarIn()
+    {
+        if (!_settings.AutoSwitch || _mgr == null || _monitor.ConnectedDevice != null) return;
+        if (DateTimeOffset.Now - _lastAuto < TimeSpan.FromSeconds(15)) return;
+        var playing = _mgr.GetSessions().FirstOrDefault(s =>
+            s.GetPlaybackInfo().PlaybackStatus == GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing);
+        if (playing == null) return;
+        Log.Write($"자동 전환: 재생 중({playing.SourceAppUserModelId})에 에어팟을 귀에 꽂음");
+        _ = AutoAsync(playing);
+    }
+
     /// <summary>지금 가져올 수 있는 에어팟: 근처에서 보이고, 이 PC와는 연결 안 된 페어링 기기.</summary>
     public PairedDevice? Candidate(out AirPodsStatus? status)
     {
@@ -122,18 +137,20 @@ public sealed class DeviceSwitcher
                 Notify?.Invoke($"{target.Name}을 가져오지 못했어요");
                 return false;
             }
-            for (int i = 0; i < 100; i++)
+            for (int i = 0; i < 150; i++)
             {
                 await Task.Delay(100);
-                var endpoint = await Task.Run(() => AudioReconnector.ActiveStereoEndpoint(target.Address));
+                var endpoint = await Task.Run(() => AudioReconnector.ActiveStereoEndpoint(target.Address, target.Name));
                 if (endpoint == null) continue;
                 await Task.Run(() => AudioReconnector.MakeDefault(endpoint));
                 Log.Write($"가져옴: {target.Name} · {sw.ElapsedMilliseconds}ms");
                 Notify?.Invoke($"{target.Name}을 이 PC로 가져왔어요");
                 return true;
             }
-            Log.Write($"가져오기 시간 초과: {target.Name}");
-            Notify?.Invoke($"{target.Name}이 응답하지 않아요. 다른 기기에서 쓰는 중인지 확인해 주세요");
+            Log.Write($"가져오기 시간 초과: {target.Name} · 블루투스 연결 {(_monitor.ConnectedDevice != null ? "됨" : "안 됨")}");
+            // 블루투스는 붙었는데 소리 길만 늦는 경우엔 윈도우가 곧 알아서 돌린다 — 겁주는 알림은 안 붙었을 때만
+            if (_monitor.ConnectedDevice == null)
+                Notify?.Invoke($"{Josa.IGa(target.Name)} 응답하지 않아요. 다른 기기에서 쓰는 중인지 확인해 주세요");
             return false;
         }
         finally

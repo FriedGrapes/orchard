@@ -23,7 +23,8 @@ public static class Program
             {
                 foreach (var e in AudioReconnector.Find(args[t + 1])) Log.Write($"끝점 {e.Name} · 활성 {e.Active} · 필터 {e.FilterId}");
                 AudioReconnector.DumpRender();
-                Log.Write($"지금 쓸 수 있는 스테레오 끝점: {AudioReconnector.ActiveStereoEndpoint(args[t + 1]) ?? "없음"}");
+                int n = Array.IndexOf(args, "--name"); // --name AirPods: 기기 이름으로도 찾기
+                Log.Write($"지금 쓸 수 있는 스테레오 끝점: {AudioReconnector.ActiveStereoEndpoint(args[t + 1], n >= 0 && n + 1 < args.Length ? args[n + 1] : null) ?? "없음"}");
                 return;
             }
             // --test-auto: 실제 자동 전환과 같은 순서(스피커 음소거 → 다시 연결)

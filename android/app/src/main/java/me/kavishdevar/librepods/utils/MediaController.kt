@@ -49,7 +49,11 @@ object MediaController {
     private const val SELF_ACTION_IGNORE_MS = 800L
     private const val PLAYBACK_DEBOUNCE_MS = 300L
     private var lastPlaybackCallbackAt: Long = 0L
-    private var lastKnownIsMusicActive: Boolean? = null
+    private val musicEdge = MusicEdge()
+    // Orchard: 되튐으로 건너뛴 뒤 멈춤이 마저 반영되도록 잠시 뒤 한 번 더 본다
+    private val recheckStopped = Runnable {
+        if (this::audioManager.isInitialized && !audioManager.isMusicActive) musicEdge.onSkipped(isActive = false, selfAction = false)
+    }
 
     private const val PAUSED_FOR_OTHER_DEVICE_CLEAR_MS = 500L
     private val clearPausedForOtherDeviceRunnable = Runnable {
@@ -102,26 +106,31 @@ object MediaController {
             super.onPlaybackConfigChanged(configs)
             val now = SystemClock.uptimeMillis()
             val isActive = audioManager.isMusicActive
-            Log.d("MediaController", "Playback config changed, iPausedTheMedia: $iPausedTheMedia, isActive: $isActive, pausedForOtherDevice: $pausedForOtherDevice, lastKnownIsMusicActive: $lastKnownIsMusicActive")
+            Log.d("MediaController", "Playback config changed, iPausedTheMedia: $iPausedTheMedia, isActive: $isActive, pausedForOtherDevice: $pausedForOtherDevice, lastActive: ${musicEdge.lastActive}")
 
             if (!isActive && lastPlayWithReplay && now - lastPlayTime < 2500L) {
                 Log.d("MediaController", "Music paused shortly after play with replay; retrying play")
                 lastPlayWithReplay = false
                 sendPlay()
-                lastKnownIsMusicActive = true
+                musicEdge.set(true)
                 return
             }
 
             if (now - lastPlaybackCallbackAt < PLAYBACK_DEBOUNCE_MS) {
                 Log.d("MediaController", "Ignoring playback callback due to debounce (${now - lastPlaybackCallbackAt}ms)")
                 lastPlaybackCallbackAt = now
+                musicEdge.onSkipped(isActive, selfAction = false)
+                handler.removeCallbacks(recheckStopped)
+                handler.postDelayed(recheckStopped, PLAYBACK_DEBOUNCE_MS + 100)
                 return
             }
             lastPlaybackCallbackAt = now
 
             if (now - lastSelfActionAt < SELF_ACTION_IGNORE_MS) {
                 Log.d("MediaController", "Ignoring playback callback because it's likely caused by our own action (${now - lastSelfActionAt}ms since last self-action)")
-                lastKnownIsMusicActive = isActive
+                musicEdge.onSkipped(isActive, selfAction = true)
+                handler.removeCallbacks(recheckStopped)
+                handler.postDelayed(recheckStopped, SELF_ACTION_IGNORE_MS)
                 return
             }
 
@@ -166,7 +175,7 @@ object MediaController {
                     Log.d("MediaController", "Still not active while pausedForOtherDevice; will clear state after timeout")
                 }
 
-                lastKnownIsMusicActive = isActive
+                musicEdge.set(isActive)
                 return
             }
 
@@ -189,18 +198,16 @@ object MediaController {
             }
 
             Log.d("MediaController", "pausedWhileTakingOver: $pausedWhileTakingOver")
-            if (!pausedWhileTakingOver && isActive && hasNewMusicOrMovie) {
-                if (lastKnownIsMusicActive != true) {
-                    if (!recentlyLostOwnership) {
-                        Log.d("MediaController", "Music/movie is active and not pausedWhileTakingOver; requesting takeOver")
-                        ServiceManager.getService()?.takeOver("music")
-                    } else {
-                        Log.d("MediaController", "Skipping take-over due to recent ownership loss")
-                    }
+            if (!pausedWhileTakingOver && musicEdge.isStart(isActive, hasNewMusicOrMovie)) {
+                if (!recentlyLostOwnership) {
+                    Log.d("MediaController", "Music/movie is active and not pausedWhileTakingOver; requesting takeOver")
+                    ServiceManager.getService()?.takeOver("music")
+                } else {
+                    Log.d("MediaController", "Skipping take-over due to recent ownership loss")
                 }
             }
 
-            lastKnownIsMusicActive = hasNewMusicOrMovie && isActive
+            musicEdge.onEvaluated(isActive, hasNewMusicOrMovie)
         }
     }
 
