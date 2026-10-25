@@ -22,7 +22,113 @@ public static class AudioReconnector
         });
     }
 
-    public static bool Reconnect(string address) => OnSta(() => Send(address, KSPROPERTY_ONESHOT_RECONNECT));
+    public static bool Reconnect(string address) => OnSta(() =>
+    {
+        RememberContainers(address);
+        return Send(address, KSPROPERTY_ONESHOT_RECONNECT);
+    });
+
+    /// <summary>
+    /// 이 에어팟의 스테레오(A2DP) 재생 끝점이 지금 쓸 수 있으면 그 ID, 아니면 null.
+    /// 퀄컴 칩 PC(서피스 프로 등)는 실제 소리를 블루투스 주소가 안 들어간 별도 경로(qcasd#a2dpspeaker…)로 내보낸다.
+    /// 그래서 주소로 찾은 끝점의 '컨테이너 ID'(같은 물리 기기면 같음)로 활성 스테레오 끝점을 고른다.
+    /// </summary>
+    public static string? ActiveStereoEndpoint(string address) => OnSta(() =>
+    {
+        RememberContainers(address);
+        Containers.TryGetValue(Key(address), out var known);
+        string? found = null;
+        ForEachFilter("", (endpointId, filterId, active, device) =>
+        {
+            if (!active || !endpointId.StartsWith("{0.0.0.")) return false;
+            var f = filterId.ToLowerInvariant();
+            bool stereo = f.Contains("0000110b") || f.Contains("a2dp");
+            bool mine = f.Contains(Key(address)) || (known != null && ContainerId(device) is Guid g && known.Contains(g));
+            if (stereo && mine) { found = endpointId; return true; }
+            return false;
+        });
+        return found;
+    });
+
+    // 주소 → 그 기기 끝점들의 컨테이너 ID. 연결되고 나면 주소 든 끝점을 못 읽는 PC가 있어, 읽을 수 있을 때(연결 전) 기억해 둔다.
+    static readonly Dictionary<string, HashSet<Guid>> Containers = new();
+    static string Key(string address) => address.Replace(":", "").ToLowerInvariant();
+
+    /// <summary>앱이 켜질 때(에어팟이 아직 안 붙어 있을 때) 미리 기억해 둔다.</summary>
+    public static void Prepare(string address) => OnSta(() => { RememberContainers(address); return true; });
+
+    static void RememberContainers(string address)
+    {
+        ForEachFilter(address, (_, _, _, device) =>
+        {
+            if (ContainerId(device) is Guid g)
+            {
+                lock (Containers)
+                {
+                    if (!Containers.TryGetValue(Key(address), out var set)) Containers[Key(address)] = set = new();
+                    set.Add(g);
+                }
+            }
+            return false;
+        });
+    }
+
+    /// <summary>확인용: 이 기기(컨테이너)의 지금 활성인 끝점 이름들.</summary>
+    public static string ActiveOfDevice(string address) => OnSta(() =>
+    {
+        Containers.TryGetValue(Key(address), out var known);
+        var names = new List<string>();
+        ForEachFilter("", (endpointId, filterId, active, device) =>
+        {
+            if (active && known != null && ContainerId(device) is Guid g && known.Contains(g))
+                names.Add((endpointId.StartsWith("{0.0.0.") ? "출력:" : "입력:") + (filterId.Contains("a2dp", StringComparison.OrdinalIgnoreCase) ? "스테레오" : "통화"));
+            return false;
+        });
+        return string.Join(",", names);
+    });
+
+    /// <summary>확인용: 모든 재생 끝점의 ID·활성·컨테이너·필터 앞부분을 기록한다.</summary>
+    public static void DumpRender() => OnSta(() =>
+    {
+        ForEachFilter("", (endpointId, filterId, active, device) =>
+        {
+            if (endpointId.StartsWith("{0.0.0."))
+                Log.Write($"재생 끝점 {endpointId[^38..]} · 활성 {active} · 컨테이너 {ContainerId(device)} · {filterId[..Math.Min(70, filterId.Length)]}");
+            return false;
+        });
+        return true;
+    });
+
+    /// <summary>끝점의 PKEY_Device_ContainerId — 같은 물리 기기의 끝점들은 같은 값을 가진다.</summary>
+    static Guid? ContainerId(IMMDevice device)
+    {
+        IntPtr storePtr = IntPtr.Zero;
+        try
+        {
+            device.OpenPropertyStore(0 /* STGM_READ */, out storePtr);
+            var store = (IPropertyStore)Marshal.GetObjectForIUnknown(storePtr);
+            var key = new PropertyKey { Fmtid = new Guid("8C7ED206-3F8A-4827-B3AB-AE9E1FAEFC6C"), Pid = 2 };
+            var pv = new PropVariant();
+            if (store.GetValue(ref key, ref pv) < 0) return null;
+            try { return pv.Vt == 72 /* VT_CLSID */ && pv.Ptr != IntPtr.Zero ? Marshal.PtrToStructure<Guid>(pv.Ptr) : null; }
+            finally { PropVariantClear(ref pv); }
+        }
+        catch { return null; }
+        finally { if (storePtr != IntPtr.Zero) Marshal.Release(storePtr); }
+    }
+
+    /// <summary>
+    /// 끝점을 윈도우 기본 출력(일반·멀티미디어·통신 모두)으로 정한다.
+    /// 공식 API가 없어 소리 설정 창과 같은 내부 인터페이스(IPolicyConfig)를 쓴다 — SoundSwitch·EarTrumpet 등과 같은 방식.
+    /// </summary>
+    public static bool MakeDefault(string endpointId) => OnSta(() =>
+    {
+        var policy = (IPolicyConfig)Activator.CreateInstance(Type.GetTypeFromCLSID(ClsidPolicyConfigClient, throwOnError: true)!)!;
+        bool ok = true;
+        for (int role = 0; role < 3; role++) ok &= policy.SetDefaultEndpoint(endpointId, role) >= 0;
+        Log.Write($"기본 출력 → {endpointId}: {(ok ? "바꿈" : "실패")}");
+        return ok;
+    });
 
     public static bool Disconnect(string address) => OnSta(() => Send(address, KSPROPERTY_ONESHOT_DISCONNECT));
 
@@ -48,7 +154,7 @@ public static class AudioReconnector
     static bool Send(string address, uint prop)
     {
         bool sent = false;
-        ForEachFilter(address, (name, id, active, part) =>
+        ForEachFilter(address, (name, id, active, dev) =>
         {
             IntPtr ks = IntPtr.Zero;
             try
@@ -86,13 +192,14 @@ public static class AudioReconnector
     }
 
     /// <summary>visit 이 true 를 돌려주면 멈춘다.</summary>
-    static void ForEachFilter(string address, Func<string, string, bool, IPart, bool> visit)
+    static void ForEachFilter(string address, Func<string, string, bool, IMMDevice, bool> visit)
     {
         var addr = address.Replace(":", "").ToLowerInvariant();
         var enumerator = (IMMDeviceEnumerator)AudioCom.CreateEnumerator();
         foreach (var flow in new[] { EDataFlow.eRender, EDataFlow.eCapture })
         {
-            enumerator.EnumAudioEndpoints(flow, DEVICE_STATE_ACTIVE | DEVICE_STATE_UNPLUGGED, out var devices);
+            // 모든 상태: 퀄컴 PC는 연결되면 주소 들어간 끝점이 '없음' 상태로 바뀐다(컨테이너 ID 를 읽으려면 필요)
+            enumerator.EnumAudioEndpoints(flow, 0xF /* DEVICE_STATEMASK_ALL */, out var devices);
             devices.GetCount(out uint count);
             for (uint i = 0; i < count; i++)
             {
@@ -111,15 +218,50 @@ public static class AudioReconnector
                     filterTopo.GetDeviceId(out string filterId);
                     if (!filterId.ToLowerInvariant().Contains(addr)) continue;
                     device.GetId(out string endpointId);
-                    if (visit(endpointId, filterId, state == DEVICE_STATE_ACTIVE, part)) return;
+                    if (visit(endpointId, filterId, state == DEVICE_STATE_ACTIVE, device)) return;
                 }
-                catch (COMException) { /* 블루투스가 아닌 끝점은 토폴로지가 다르다 */ }
-                catch (InvalidCastException) { }
+                // 블루투스가 아닌 끝점은 토폴로지가 다르고, '없음' 상태 끝점은 경로를 못 찾는다(0x80070003) — 건너뛴다
+                catch (Exception e) when (e is COMException or InvalidCastException or System.IO.IOException or UnauthorizedAccessException) { }
             }
         }
     }
 
     // ---------- COM 정의 ----------
+    [StructLayout(LayoutKind.Sequential)]
+    struct PropertyKey { public Guid Fmtid; public uint Pid; }
+
+    [StructLayout(LayoutKind.Explicit, Size = 24)]
+    struct PropVariant { [FieldOffset(0)] public ushort Vt; [FieldOffset(8)] public IntPtr Ptr; }
+
+    [DllImport("ole32.dll")] static extern int PropVariantClear(ref PropVariant pv);
+
+    [ComImport, Guid("886D8EEB-8CF2-4446-8D02-CDBA1DBDCF99"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    interface IPropertyStore
+    {
+        [PreserveSig] int GetCount(out uint count);
+        [PreserveSig] int GetAt(uint index, out PropertyKey key);
+        [PreserveSig] int GetValue(ref PropertyKey key, ref PropVariant value);
+    }
+
+    static readonly Guid ClsidPolicyConfigClient = new("870AF99C-171D-4F9E-AF0D-E63DF40C2BC9");
+
+    [ComImport, Guid("F8679F50-850A-41CF-9C72-430F290290C8"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    interface IPolicyConfig
+    {
+        // 앞의 10개는 쓰지 않지만 순서(가상 함수표 자리)를 맞추려고 둔다
+        [PreserveSig] int GetMixFormat(IntPtr a, IntPtr b);
+        [PreserveSig] int GetDeviceFormat(IntPtr a, int b, IntPtr c);
+        [PreserveSig] int ResetDeviceFormat(IntPtr a);
+        [PreserveSig] int SetDeviceFormat(IntPtr a, IntPtr b, IntPtr c);
+        [PreserveSig] int GetProcessingPeriod(IntPtr a, int b, IntPtr c, IntPtr d);
+        [PreserveSig] int SetProcessingPeriod(IntPtr a, IntPtr b);
+        [PreserveSig] int GetShareMode(IntPtr a, IntPtr b);
+        [PreserveSig] int SetShareMode(IntPtr a, IntPtr b);
+        [PreserveSig] int GetPropertyValue(IntPtr a, int b, IntPtr c, IntPtr d);
+        [PreserveSig] int SetPropertyValue(IntPtr a, int b, IntPtr c, IntPtr d);
+        [PreserveSig] int SetDefaultEndpoint([MarshalAs(UnmanagedType.LPWStr)] string deviceId, int role);
+        [PreserveSig] int SetEndpointVisibility(IntPtr a, int b);
+    }
     const uint CLSCTX_ALL = 0x17;
     const uint CLSCTX_INPROC_SERVER = 0x1;
     const uint DEVICE_STATE_ACTIVE = 0x1;

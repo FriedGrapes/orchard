@@ -171,9 +171,11 @@ object MediaController {
             }
 
             if (configs != null && !iPausedTheMedia) {
-                val localMac = ServiceManager.getService()?.localMac ?: return
-                if (localMac == "") return
-                ServiceManager.getService()?.aacpManager?.sendMediaInformataion(
+                // Orchard: 루팅 안 된 폰은 자기 블루투스 주소를 못 읽어 localMac 이 비어 있다.
+                // 원본은 여기서 return 해서 폰에서 재생해도 에어팟을 가져오지 않았다(윈도우 → 안드로이드 전환 안 됨).
+                // 주소가 있을 때만 에어팟에 재생 정보를 알리고, 가져오기는 아래에서 그대로 한다.
+                val localMac = ServiceManager.getService()?.localMac.orEmpty()
+                if (localMac.isNotEmpty()) ServiceManager.getService()?.aacpManager?.sendMediaInformataion(
                     localMac,
                     isActive
                 )

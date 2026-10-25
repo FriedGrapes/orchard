@@ -30,6 +30,9 @@ public sealed class DeviceSwitcher
         _mgr = await GlobalSystemMediaTransportControlsSessionManager.RequestAsync();
         _mgr.SessionsChanged += (_, _) => Hook();
         Hook();
+        // 에어팟별 '같은 기기' 표시(컨테이너 ID)를 미리 읽어 둔다 — 연결된 뒤에는 못 읽는 PC가 있다
+        var paired = _monitor.Paired.ToList();
+        _ = Task.Run(() => { foreach (var p in paired) AudioReconnector.Prepare(p.Address); });
     }
 
     void Hook()
@@ -82,31 +85,36 @@ public sealed class DeviceSwitcher
         using var guard = SpeakerGuard.Engage();
         bool paused = await session.TryPauseAsync();
         bool ok = await TakeOverAsync(target);
-        if (ok) await Task.Delay(600); // 윈도우가 기본 출력을 에어팟으로 바꿀 시간
+        if (ok) await Task.Delay(150); // 기본 출력이 막 바뀐 직후 첫 소리가 잘리지 않게
         if (paused) await session.TryPlayAsync();
     }
 
-    /// <summary>에어팟을 이 PC로 가져온다. 연결되면 true.</summary>
+    /// <summary>
+    /// 에어팟을 이 PC로 가져온다. 소리가 나갈 준비가 되면(스테레오 끝점이 활성) 바로 기본 출력으로 정하고 true.
+    /// 예전에는 '연결됨' 신호를 200ms 간격으로 기다린 뒤 0.6초를 더 쉬었고, 기본 출력은 바꾸지 않았다.
+    /// </summary>
     public async Task<bool> TakeOverAsync(PairedDevice target)
     {
         if (_busy) return false;
         _busy = true;
         try
         {
+            var sw = System.Diagnostics.Stopwatch.StartNew();
             bool sent = await Task.Run(() => AudioReconnector.Reconnect(target.Address));
             if (!sent)
             {
                 Notify?.Invoke($"{target.Name}을 가져오지 못했어요");
                 return false;
             }
-            for (int i = 0; i < 40; i++)
+            for (int i = 0; i < 100; i++)
             {
-                await Task.Delay(200);
-                if (_monitor.ConnectedDevice?.Address == target.Address)
-                {
-                    Notify?.Invoke($"{target.Name}을 이 PC로 가져왔어요");
-                    return true;
-                }
+                await Task.Delay(100);
+                var endpoint = await Task.Run(() => AudioReconnector.ActiveStereoEndpoint(target.Address));
+                if (endpoint == null) continue;
+                await Task.Run(() => AudioReconnector.MakeDefault(endpoint));
+                Log.Write($"가져옴: {target.Name} · {sw.ElapsedMilliseconds}ms");
+                Notify?.Invoke($"{target.Name}을 이 PC로 가져왔어요");
+                return true;
             }
             Log.Write($"가져오기 시간 초과: {target.Name}");
             Notify?.Invoke($"{target.Name}이 응답하지 않아요. 다른 기기에서 쓰는 중인지 확인해 주세요");

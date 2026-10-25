@@ -81,6 +81,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import me.kavishdevar.librepods.BuildConfig
 import me.kavishdevar.librepods.MainActivity
@@ -2407,7 +2408,16 @@ class AirPodsService : Service(), SharedPreferences.OnSharedPreferenceChangeList
         )
         if (BluetoothConnectionManager.aacpSocket?.isConnected == true) {
             if (!XposedRemotePrefProvider.create().getBoolean("vendor_id_hook", false) || ownsConnection == 0) {
-                Log.d(TAG, "not taking over, vendorid is probably not set to apple")
+                // Orchard: 애플 흉내(Xposed) 없이는 에어팟에 '이 기기로' 요청을 못 보낸다. 대신 소리가 이 폰에 없으면
+                // 오디오(A2DP) 연결을 걸어 가져온다 — 루팅 안 된 갤럭시에서도 된다(2026-10-25 실기기 확인).
+                if (takingOverFor == "music" && !audioOnThisPhone()) {
+                    Log.d(TAG, "Orchard: no vendor hook, taking over by A2DP connect")
+                    MediaController.pausedWhileTakingOver = true
+                    MediaController.sendPause(true)
+                    connectAudio(this, device)
+                } else {
+                    Log.d(TAG, "not taking over, vendorid is probably not set to apple")
+                }
                 return
             }
             if (aacpManager.getControlCommandStatus(AACPManager.Companion.ControlCommandIdentifiers.OWNS_CONNECTION)?.value[0]?.toInt() != 1 || (aacpManager.audioSource?.mac != localMac && aacpManager.audioSource?.type != AACPManager.Companion.AudioSourceType.NONE)) {
@@ -2971,6 +2981,36 @@ class AirPodsService : Service(), SharedPreferences.OnSharedPreferenceChangeList
         }
     }
 
+    /** Orchard: 에어팟(A2DP)이 지금 이 폰의 소리 출력인지. */
+    fun audioOnThisPhone(): Boolean {
+        val am = getSystemService(AudioManager::class.java)
+        return am.getDevices(AudioManager.GET_DEVICES_OUTPUTS).any {
+            it.type == android.media.AudioDeviceInfo.TYPE_BLUETOOTH_A2DP && (device == null || it.address == device?.address)
+        }
+    }
+
+    /**
+     * Orchard: 가져오느라 멈춘 재생을, 에어팟이 이 폰의 소리 출력이 되는 순간 이어 튼다(최대 8초 기다림).
+     * 원본은 권한 있는 폰에서만 바로 이어 틀어서, 일반 폰에서는 가져온 뒤 재생이 멈춰 있었다.
+     */
+    private fun resumeWhenAudioArrives() {
+        if (!MediaController.pausedWhileTakingOver) return
+        serviceScope.launch {
+            val start = System.currentTimeMillis()
+            while (System.currentTimeMillis() - start < 8000) {
+                if (audioOnThisPhone()) {
+                    delay(150) // 소리 길이 막 열린 직후의 첫 소리가 잘리지 않게
+                    Log.d(TAG, "Orchard: AirPods audio ready after ${System.currentTimeMillis() - start}ms, resuming")
+                    withContext(Dispatchers.Main) { MediaController.sendPlay(force = true) }
+                    return@launch
+                }
+                delay(100)
+            }
+            Log.d(TAG, "Orchard: AirPods audio did not arrive in 8s")
+            MediaController.pausedWhileTakingOver = false
+        }
+    }
+
     fun connectAudio(context: Context, device: BluetoothDevice?) {
         val bluetoothAdapter = context.getSystemService(BluetoothManager::class.java).adapter
 
@@ -3008,6 +3048,8 @@ class AirPodsService : Service(), SharedPreferences.OnSharedPreferenceChangeList
                             proxy, device
                         )
                         Log.d(TAG, "not setting connection policy for A2DP, no BLUETOOTH_PRIVILEGED permission. just called connect")
+                        bluetoothAdapter.closeProfileProxy(BluetoothProfile.A2DP, proxy)
+                        resumeWhenAudioArrives()
                     }
                 }
             }

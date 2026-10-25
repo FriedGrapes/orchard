@@ -18,12 +18,32 @@ public static class Program
         if (t >= 0 && t + 1 < args.Length)
         {
             if (args.Contains("--test-mute")) { using (SpeakerGuard.Engage()) { Thread.Sleep(1500); } Log.Write("--test-mute 끝"); return; }
+            // --test-list: 이 주소의 오디오 끝점·필터를 기록(읽기만)
+            if (args.Contains("--test-list"))
+            {
+                foreach (var e in AudioReconnector.Find(args[t + 1])) Log.Write($"끝점 {e.Name} · 활성 {e.Active} · 필터 {e.FilterId}");
+                AudioReconnector.DumpRender();
+                Log.Write($"지금 쓸 수 있는 스테레오 끝점: {AudioReconnector.ActiveStereoEndpoint(args[t + 1]) ?? "없음"}");
+                return;
+            }
             // --test-auto: 실제 자동 전환과 같은 순서(스피커 음소거 → 다시 연결)
             if (args.Contains("--test-auto"))
             {
-                bool done;
-                using (SpeakerGuard.Engage()) { done = AudioReconnector.Reconnect(args[t + 1]); }
-                Log.Write($"--test-auto {args[t + 1]} → {(done ? "명령 전달됨" : "실패")}");
+                var sw = System.Diagnostics.Stopwatch.StartNew();
+                string? ep = null;
+                using (SpeakerGuard.Engage())
+                {
+                    if (AudioReconnector.Reconnect(args[t + 1]))
+                        for (int i = 0, last = -1; i < 150 && ep == null; i++)
+                        {
+                            Thread.Sleep(100);
+                            ep = AudioReconnector.ActiveStereoEndpoint(args[t + 1]);
+                            var now = AudioReconnector.ActiveOfDevice(args[t + 1]);
+                            if (now.GetHashCode() != last) { last = now.GetHashCode(); Log.Write($"  {sw.ElapsedMilliseconds}ms 활성: [{now}]"); }
+                        }
+                    if (ep != null) AudioReconnector.MakeDefault(ep);
+                }
+                Log.Write($"--test-auto {args[t + 1]} → {(ep != null ? $"소리 준비·기본 출력 {sw.ElapsedMilliseconds}ms" : "실패")}");
                 return;
             }
             bool ok = AudioReconnector.Reconnect(args[t + 1]);
