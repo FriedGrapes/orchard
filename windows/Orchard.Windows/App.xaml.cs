@@ -12,6 +12,8 @@ public partial class App : Application
     readonly MediaControl _media = new();
     AirPodsMonitor? _monitor;
     DeviceSwitcher? _switcher;
+    LinkService? _link;
+    PairWindow? _pairWindow;
     TaskbarIcon? _tray;
     PopupWindow? _popup;
     AirPodsStatus? _prev;
@@ -34,6 +36,54 @@ public partial class App : Application
 
         _popup = new PopupWindow(_updater);
         CreateTray();
+
+        // 개발·확인용: --link-selftest <폴더> — 진짜 UDP로 짝짓기·넘겨주기를 주고받는다(상대: tools/link_fake_phone.py).
+        int selftest = Array.IndexOf(e.Args, "--link-selftest");
+        if (selftest >= 0 && selftest + 1 < e.Args.Length)
+        {
+            var dir = e.Args[selftest + 1];
+            LinkService.FilePath = System.IO.Path.Combine(dir, "link.json");
+            var link = new LinkService { State = () => LinkFlags.HasAudio, Release = () => { Log.Write("selftest: 넘겨주기 요청 받음"); return Task.CompletedTask; } };
+            var paired = new TaskCompletionSource<string>();
+            var released = new TaskCompletionSource<string>();
+            link.Paired += p => paired.TrySetResult(p.Name);
+            link.Notify += m => released.TrySetResult(m);
+            link.Start();
+            System.IO.File.WriteAllText(System.IO.Path.Combine(dir, "pair_url.txt"), link.BeginPairing().ToUrl());
+            var lines = new List<string>();
+            var t1 = await Task.WhenAny(paired.Task, Task.Delay(20000));
+            lines.Add(t1 == paired.Task ? $"PAIRED {paired.Task.Result}" : "PAIRED timeout");
+            var t2 = await Task.WhenAny(released.Task, Task.Delay(10000));
+            lines.Add(t2 == released.Task ? $"GAVE {released.Task.Result}" : "GAVE timeout");
+            var (r, who) = await link.RequestReleaseAsync(false);
+            lines.Add($"ASKED {r} {who}");
+            System.IO.File.WriteAllLines(System.IO.Path.Combine(dir, "result.txt"), lines);
+            link.Dispose();
+            Shutdown();
+            return;
+        }
+
+        // 개발·확인용: --pair-demo <폴더> — 폰과 연결 창을 가짜 짝으로 띄워 기다림·연결됨 순간을 찍는다.
+        int pairDemo = Array.IndexOf(e.Args, "--pair-demo");
+        if (pairDemo >= 0 && pairDemo + 1 < e.Args.Length)
+        {
+            var dir = e.Args[pairDemo + 1];
+            var url = new PairUrl(0x0BADF00D, new byte[32], "H1-PC", new[] { "192.168.0.10" }, LinkPacket.Port).ToUrl();
+            var w = new PairWindow(null, url);
+            w.SetPeers(new[] { new LinkPeer(1, "Galaxy S26 Ultra", "", "192.168.0.23", DateTimeOffset.Now.AddSeconds(-20), "wifi") });
+            w.Show();
+            await Task.Delay(900);
+            w.SaveSnapshot(System.IO.Path.Combine(dir, "pair_wait.png"));
+            w.ShowDone("Galaxy S26 Ultra");
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+            foreach (var ms in new[] { 80, 200, 300, 420, 560, 760 })
+            {
+                while (sw.ElapsedMilliseconds < ms) await Task.Delay(5);
+                w.SaveSnapshot(System.IO.Path.Combine(dir, $"pair_done_{ms:0000}.png"));
+            }
+            Shutdown();
+            return;
+        }
 
         // 개발·확인용: --demo 202D 처럼 모델을 주면 가짜 상태로 팝업을 띄운다.
         int demo = Array.IndexOf(e.Args, "--demo");
@@ -77,7 +127,8 @@ public partial class App : Application
         _monitor = new AirPodsMonitor();
         _monitor.Changed += (s, owner) => Dispatcher.InvokeAsync(() => OnChanged(s, owner));
         await _monitor.StartAsync();
-        _switcher = new DeviceSwitcher(_monitor, _settings);
+        StartLink(_monitor);
+        _switcher = new DeviceSwitcher(_monitor, _settings, _link);
         _switcher.Notify += msg => Dispatcher.Invoke(() => _tray?.ShowNotification("Orchard", msg));
         _popup.TakeOverRequested += () => _ = TakeOverHere();
         try { await _switcher.StartAsync(); } catch (Exception ex) { Log.Write($"미디어 감시 시작 실패: {ex.Message}"); }
@@ -118,6 +169,9 @@ public partial class App : Application
         var take = new MenuItem { Header = "이 PC로 가져오기" };
         take.Click += (_, _) => _ = TakeOverHere();
         menu.Items.Add(take);
+        var pair = new MenuItem { Header = "폰과 연결…" };
+        pair.Click += (_, _) => ShowPairWindow();
+        menu.Items.Add(pair);
         menu.Items.Add(new Separator());
         menu.Items.Add(Toggle("윈도우 시작 때 실행", () => AutoStart.IsOn, AutoStart.Set));
         menu.Items.Add(Toggle("자동 업데이트", () => _settings.AutoUpdate, v => _settings.AutoUpdate = v));
@@ -142,6 +196,33 @@ public partial class App : Application
         };
         _tray.TrayLeftMouseUp += (_, _) => ShowPopup();
         _tray.ForceCreate(enablesEfficiencyMode: false);
+    }
+
+    /// <summary>폰과 주고받는 전환 신호. 폰이 에어팟을 원하면 재생을 멈추고 에어팟을 놓는다.</summary>
+    void StartLink(AirPodsMonitor monitor)
+    {
+        var link = new LinkService();
+        link.State = () => monitor.ConnectedDevice != null ? LinkFlags.HasAudio : LinkFlags.None;
+        link.Release = async () =>
+        {
+            var dev = monitor.ConnectedDevice;
+            if (dev == null) return;
+            _switcher?.SuppressAuto();
+            await _media.PauseAsync();
+            await Task.Run(() => AudioReconnector.Disconnect(dev.Address));
+        };
+        link.Notify += msg => Dispatcher.Invoke(() => _tray?.ShowNotification("Orchard", msg));
+        monitor.LinkSignal += link.OnBle;
+        link.Start();
+        _link = link;
+    }
+
+    void ShowPairWindow()
+    {
+        if (_link == null) return;
+        if (_pairWindow is { IsVisible: true }) { _pairWindow.Activate(); return; }
+        _pairWindow = new PairWindow(_link);
+        _pairWindow.Show();
     }
 
     async Task TakeOverHere()
@@ -212,6 +293,7 @@ public partial class App : Application
     void Quit()
     {
         _updater.ApplyOnExit();
+        _link?.Dispose();
         _monitor?.Dispose();
         _tray?.Dispose();
         Shutdown();

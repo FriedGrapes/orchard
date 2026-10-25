@@ -1,0 +1,123 @@
+{
+  "note": "tools/link_vectors.py가 만듦 — 손으로 고치지 말 것",
+  "key_hex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+  "now": 1793000000,
+  "good": [
+    {
+      "name": "hello_body",
+      "type": 1,
+      "flags": 3,
+      "sender": 439041101,
+      "time": 1793000000,
+      "seq": 7,
+      "body": "갤럭시 S26",
+      "hex": "4f0101031a2b3c4d6adf024007eab0a4eb9fadec8b9c205332360d95edd0ed9bbf09"
+    },
+    {
+      "name": "want_music",
+      "type": 2,
+      "flags": 0,
+      "sender": 439041101,
+      "time": 1793000000,
+      "seq": 8,
+      "body": "",
+      "hex": "4f0102001a2b3c4d6adf02400894dd3b55f68e8624"
+    },
+    {
+      "name": "want_call",
+      "type": 2,
+      "flags": 16,
+      "sender": 3735928559,
+      "time": 1793000001,
+      "seq": 255,
+      "body": "",
+      "hex": "4f010210deadbeef6adf0241ff73452138a59765ac"
+    },
+    {
+      "name": "released",
+      "type": 3,
+      "flags": 1,
+      "sender": 1,
+      "time": 1793000000,
+      "seq": 0,
+      "body": "",
+      "hex": "4f010301000000016adf024000f080b903293cf7f3"
+    },
+    {
+      "name": "busy",
+      "type": 4,
+      "flags": 4,
+      "sender": 4294967295,
+      "time": 1793000000,
+      "seq": 1,
+      "body": "",
+      "hex": "4f010404ffffffff6adf0240019daff572a32e4531"
+    },
+    {
+      "name": "pair_ok",
+      "type": 6,
+      "flags": 0,
+      "sender": 195948557,
+      "time": 1793000000,
+      "seq": 2,
+      "body": "H1-PC",
+      "hex": "4f0106000badf00d6adf02400248312d504320bf3ac732d64e85"
+    }
+  ],
+  "bad": [
+    {
+      "name": "too_short",
+      "hex": "4f0102001a2b3c4d6adf02400894dd3b55f68e86",
+      "reason": "length"
+    },
+    {
+      "name": "bad_magic",
+      "hex": "500102001a2b3c4d6adf02400894dd3b55f68e8624",
+      "reason": "magic"
+    },
+    {
+      "name": "bad_version",
+      "hex": "4f0202001a2b3c4d6adf02400894dd3b55f68e8624",
+      "reason": "version"
+    },
+    {
+      "name": "tampered_flags",
+      "hex": "4f0102011a2b3c4d6adf02400894dd3b55f68e8624",
+      "reason": "tag"
+    },
+    {
+      "name": "wrong_key",
+      "hex": "4f0102001a2b3c4d6adf02400847a776652e3f9052",
+      "reason": "tag"
+    }
+  ],
+  "time_cases": [
+    {
+      "time": 1792999940,
+      "ok": true
+    },
+    {
+      "time": 1793000060,
+      "ok": true
+    },
+    {
+      "time": 1792999939,
+      "ok": false
+    },
+    {
+      "time": 1793000061,
+      "ok": false
+    }
+  ],
+  "pair_url": "orchard://pair?v=1&id=0badf00d&k=AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8&n=H1%20PC&a=192.168.0.10,10.0.0.5&p=47820",
+  "pair_parsed": {
+    "id": 195948557,
+    "key_hex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+    "name": "H1 PC",
+    "addrs": [
+      "192.168.0.10",
+      "10.0.0.5"
+    ],
+    "port": 47820
+  }
+}

@@ -11,6 +11,7 @@ public sealed class DeviceSwitcher
 {
     readonly AirPodsMonitor _monitor;
     readonly Settings _settings;
+    readonly LinkService? _link;
     GlobalSystemMediaTransportControlsSessionManager? _mgr;
     readonly HashSet<string> _hooked = new();
     readonly Dictionary<string, GlobalSystemMediaTransportControlsSessionPlaybackStatus> _last = new();
@@ -19,11 +20,15 @@ public sealed class DeviceSwitcher
 
     public event Action<string>? Notify;
 
-    public DeviceSwitcher(AirPodsMonitor monitor, Settings settings)
+    public DeviceSwitcher(AirPodsMonitor monitor, Settings settings, LinkService? link = null)
     {
         _monitor = monitor;
         _settings = settings;
+        _link = link;
     }
+
+    /// <summary>폰에 에어팟을 넘겨준 직후 잠깐은 이 PC가 저절로 다시 가져가지 않게 한다.</summary>
+    public void SuppressAuto() => _lastAuto = DateTimeOffset.Now;
 
     public async Task StartAsync()
     {
@@ -100,6 +105,17 @@ public sealed class DeviceSwitcher
         try
         {
             var sw = System.Diagnostics.Stopwatch.StartNew();
+            // 짝지은 폰이 있으면 먼저 '넘겨 주세요' — 폰이 재생 중이면 에어팟이 PC 요청을 무시하기 때문
+            if (_link != null)
+            {
+                var (r, peer) = await _link.RequestReleaseAsync(forCall: false);
+                if (r == LinkResult.Busy)
+                {
+                    Notify?.Invoke($"{Josa.IGa(peer)} 통화 중이라 기다릴게요");
+                    return false;
+                }
+                if (r == LinkResult.Released) await Task.Delay(250); // 폰의 일시정지가 에어팟에 닿을 틈
+            }
             bool sent = await Task.Run(() => AudioReconnector.Reconnect(target.Address));
             if (!sent)
             {

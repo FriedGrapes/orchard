@@ -127,6 +127,9 @@ class BLEManager(private val context: Context) {
         airPodsStatusListener = listener
     }
 
+    /** Orchard Link: BLE로 받은 전환 신호(제조사 데이터 0xFFFF)를 넘겨받을 곳. */
+    @Volatile var linkDataListener: ((ByteArray) -> Unit)? = null
+
     @SuppressLint("MissingPermission")
     fun startScanning() {
         try {
@@ -173,6 +176,15 @@ class BLEManager(private val context: Context) {
                 .setManufacturerData(76, manufacturerData, manufacturerDataMask)
                 .build()
 
+            // Orchard Link: PC가 BLE로 보내는 전환 신호(회사 번호 0xFFFF, 4F 01 로 시작)도 함께 받는다.
+            val linkFilter = ScanFilter.Builder()
+                .setManufacturerData(
+                    me.kavishdevar.librepods.link.LinkPacket.BLE_COMPANY_ID,
+                    byteArrayOf(0x4F, 0x01),
+                    byteArrayOf(-1, -1),
+                )
+                .build()
+
             mScanCallback = object : ScanCallback() {
                 override fun onScanResult(callbackType: Int, result: ScanResult) {
                     processScanResult(result)
@@ -190,7 +202,7 @@ class BLEManager(private val context: Context) {
                 }
             }
 
-            mBluetoothLeScanner?.startScan(listOf(scanFilter), scanSettings, mScanCallback)
+            mBluetoothLeScanner?.startScan(listOf(scanFilter, linkFilter), scanSettings, mScanCallback)
             Log.d(TAG, "BLE scanner started successfully")
 
             cleanupHandler.postDelayed(cleanupRunnable, CLEANUP_INTERVAL_MS)
@@ -256,6 +268,12 @@ class BLEManager(private val context: Context) {
     private fun processScanResult(result: ScanResult) {
         try {
             val scanRecord = result.scanRecord ?: return
+            // Orchard Link: 0xFFFF 신호는 에어팟 해석으로 보내지 않고 OrchardLink 로만 넘긴다.
+            val linkData = scanRecord.getManufacturerSpecificData(me.kavishdevar.librepods.link.LinkPacket.BLE_COMPANY_ID)
+            if (linkData != null && linkData.size >= 2 && linkData[0] == 0x4F.toByte() && linkData[1] == 0x01.toByte()) {
+                linkDataListener?.invoke(linkData)
+                return
+            }
             val address = result.device.address
             // Orchard: 근처 찾기 화면용 신호 세기(IRK로 확인된 내 에어팟만)
             if (verifiedAddresses.contains(address)) me.kavishdevar.librepods.find.LastSeen.onRssi(result.rssi)

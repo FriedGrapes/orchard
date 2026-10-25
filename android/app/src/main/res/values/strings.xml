@@ -298,4 +298,28 @@
     <string name="orchard_update_failed">Couldn\'t check. Make sure you\'re online and try again.</string>
     <string name="orchard_lid_card">Battery card when the case opens</string>
     <string name="orchard_lid_card_description">Show the black battery card at the top when you open the AirPods case nearby. It closes when you close the case.</string>
+    <!-- Orchard Link: hand AirPods between this phone and a PC. %2$s is a Korean particle, unused in English -->
+    <string name="orchard_link_channel">Handoff to PC</string>
+    <string name="orchard_link_handed_off" tools:ignore="StringFormatCount">Handed your AirPods to %1$s</string>
+    <string name="orchard_link_peer_busy" tools:ignore="StringFormatCount">%1$s is on a call, waiting</string>
+    <string name="orchard_link_title">Connect to PC</string>
+    <string name="orchard_link_section_desc">Start playing on one and the other hands over the AirPods right away.</string>
+    <string name="orchard_link_scan">Scan QR to connect a PC</string>
+    <string name="orchard_link_scan_desc">Show the QR code in Orchard on your PC, then tap</string>
+    <string name="orchard_link_scan_prompt">Scan the QR code on your PC</string>
+    <string name="orchard_link_pairing" tools:ignore="StringFormatCount">Connecting to %1$s…</string>
+    <string name="orchard_link_paired" tools:ignore="StringFormatCount">✓ Connected to %1$s</string>
+    <string name="orchard_link_not_found">Couldn\'t find the PC. Make sure both are on the same Wi-Fi</string>
+    <string name="orchard_link_bad_qr">That isn\'t an Orchard QR code. Scan the one on your PC</string>
+    <string name="orchard_link_seen_now">Just now</string>
+    <string name="orchard_link_seen_min">%1$d min ago</string>
+    <string name="orchard_link_seen_hour">%1$d h ago</string>
+    <string name="orchard_link_seen_day">%1$d d ago</string>
+    <string name="orchard_link_never">No signal yet</string>
+    <string name="orchard_link_via_wifi">Wi-Fi</string>
+    <string name="orchard_link_via_ble">Bluetooth</string>
+    <string name="orchard_link_remove">Remove</string>
+    <string name="orchard_link_remove_title">Remove %1$s?</string>
+    <string name="orchard_link_remove_desc">AirPods won\'t hand off with this PC until you scan its QR code again.</string>
+    <string name="orchard_link_cancel">Cancel</string>
 </resources>

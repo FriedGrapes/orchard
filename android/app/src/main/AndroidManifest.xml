@@ -42,6 +42,14 @@
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
+    <!-- Orchard Link: PC와 같은 와이파이에서 전환 신호(UDP) 주고받기, 짝짓기 동안만 브로드캐스트 받기 -->
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE" />
+    <!-- Orchard Link: 짝짓기 QR 찍기(카메라가 없는 기기에서도 설치되게) -->
+    <uses-feature
+        android:name="android.hardware.camera"
+        android:required="false" />
 <!--    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"-->
 <!--        android:maxSdkVersion="30" />-->
 <!--    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"-->
@@ -93,6 +101,13 @@
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <!-- Orchard Link: 카메라 앱으로 PC의 QR(orchard://pair?…)을 찍어도 바로 짝짓기 -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="orchard" android:host="pair" />
+            </intent-filter>
             <!-- <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
@@ -101,6 +116,12 @@
                     android:host="add-magic-keys" />
             </intent-filter> -->
         </activity>
+
+        <!-- Orchard Link: QR 스캐너를 폰을 세운 채로 쓰게(라이브러리 기본은 가로 고정) -->
+        <activity
+            android:name="com.journeyapps.barcodescanner.CaptureActivity"
+            android:screenOrientation="fullSensor"
+            tools:replace="screenOrientation" />
 
         <activity
             android:name=".QuickSettingsDialogActivity"

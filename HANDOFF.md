@@ -18,5 +18,12 @@
 - 안드로이드: `./gradlew testFossDebugUnitTest` → `app/build/screenshots/*.png`(전체 화면), `frames/*.png`(시간대별 프레임). Roborazzi + Robolectric, ARM 윈도우에서도 동작.
 - 윈도우: `Orchard.exe --demo 202D --snap <파일.png>` (202D=맥스 2, 2027=프로 3, 2030=에어팟 5).
 
+## 기기 간 전환 신호 (v0.2, Orchard Link)
+- 규격: `shared/link.md`. 바꾸면 `python tools/link_vectors.py`로 `shared/link-vectors.json`을 다시 만들고 두 OS 시험을 돌린다.
+- 윈도우: `Services/LinkService.cs`(UDP 47820·BLE 광고), 받는 BLE는 `AirPodsMonitor.LinkSignal`, 가져오기 전 요청은 `DeviceSwitcher.TakeOverAsync`, 짝짓기 창 `UI/PairWindow`(트레이 '폰과 연결…'). 짝 목록 `%LOCALAPPDATA%\Orchard\link.json`.
+- 안드로이드: `link/` 패키지, `AirPodsService.takeOver`가 먼저 요청, 설정 화면 'PC와 연결'.
+- 폰 없이 확인: `Orchard.exe --link-selftest <폴더>` + `python tools/link_fake_phone.py <폴더>`(진짜 UDP로 짝짓기·넘겨주기·통화 중 답), 창 모습 `Orchard.exe --pair-demo <폴더>`.
+- 윈도우 설치는 관리자 권한이 없어 방화벽 규칙을 못 넣는다 → PC가 25초마다 HELLO를 보내 답장 길을 열어 두고, 막히면 BLE가 받친다.
+
 ## 모델 번호
 - 기준 표: `shared/models.json`. 윈도우 `Orchard.Core/Models.cs`, 안드로이드 `data/AirPods.kt`(A-번호)·`bluetooth/BLEManager.kt`(바이트 뒤집힌 값)와 맞춘다.

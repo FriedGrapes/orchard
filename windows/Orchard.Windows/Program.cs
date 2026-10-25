@@ -52,7 +52,7 @@ public static class Program
         }
 
         using var single = new Mutex(true, @"Local\Orchard.Windows", out bool first);
-        if (!first && !args.Contains("--demo")) return; // 확인용 --demo 는 설치된 Orchard 가 켜져 있어도 뜬다
+        if (!first && !args.Contains("--demo") && !args.Contains("--pair-demo") && !args.Contains("--link-selftest")) return; // 확인용 화면은 설치된 Orchard 가 켜져 있어도 뜬다
 
         var app = new App();
         app.InitializeComponent();

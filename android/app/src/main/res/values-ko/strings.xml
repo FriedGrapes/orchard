@@ -288,4 +288,28 @@
     <string name="orchard_update_failed">확인하지 못했어요. 인터넷 연결을 확인하고 다시 눌러 주세요.</string>
     <string name="orchard_lid_card">케이스를 열면 배터리 카드</string>
     <string name="orchard_lid_card_description">근처에서 에어팟 케이스를 열면 화면 위에 검정 배터리 카드를 띄워요. 케이스를 닫으면 사라져요.</string>
+    <!-- Orchard Link: PC와 에어팟 주고받기. %2$s 는 이름에 맞춘 조사(으로/로, 이/가, 와/과) -->
+    <string name="orchard_link_channel">PC로 넘기기</string>
+    <string name="orchard_link_handed_off">에어팟을 %1$s%2$s 넘겼어요</string>
+    <string name="orchard_link_peer_busy">%1$s%2$s 통화 중이라 기다릴게요</string>
+    <string name="orchard_link_title">PC와 연결</string>
+    <string name="orchard_link_section_desc">한쪽에서 재생을 시작하면, 다른 쪽이 바로 에어팟을 넘겨줘요.</string>
+    <string name="orchard_link_scan">QR 찍어 PC 연결</string>
+    <string name="orchard_link_scan_desc">PC의 Orchard에서 QR을 띄운 뒤 눌러 주세요</string>
+    <string name="orchard_link_scan_prompt">PC 화면의 QR을 찍어 주세요</string>
+    <string name="orchard_link_pairing">%1$s%2$s 연결하는 중…</string>
+    <string name="orchard_link_paired">✓ %1$s%2$s 연결됐어요</string>
+    <string name="orchard_link_not_found">PC를 찾지 못했어요 — 같은 와이파이인지 확인해 주세요</string>
+    <string name="orchard_link_bad_qr">Orchard QR이 아니에요. PC 화면의 QR을 찍어 주세요</string>
+    <string name="orchard_link_seen_now">방금</string>
+    <string name="orchard_link_seen_min">%1$d분 전</string>
+    <string name="orchard_link_seen_hour">%1$d시간 전</string>
+    <string name="orchard_link_seen_day">%1$d일 전</string>
+    <string name="orchard_link_never">아직 신호 없음</string>
+    <string name="orchard_link_via_wifi">와이파이</string>
+    <string name="orchard_link_via_ble">블루투스</string>
+    <string name="orchard_link_remove">끊기</string>
+    <string name="orchard_link_remove_title">%1$s 연결을 끊을까요?</string>
+    <string name="orchard_link_remove_desc">다시 QR을 찍기 전까지 이 PC와는 에어팟을 주고받지 않아요.</string>
+    <string name="orchard_link_cancel">취소</string>
 </resources>

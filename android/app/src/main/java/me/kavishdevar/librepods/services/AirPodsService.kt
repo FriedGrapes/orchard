@@ -168,6 +168,9 @@ class AirPodsService : Service(), SharedPreferences.OnSharedPreferenceChangeList
     var cameraActive = false
     private var disconnectedBecauseReversed = false
     private var otherDeviceTookOver = false
+    // Orchard Link: PC와 주고받는 전환 신호, 방금 PC로 넘겨줬으면 이 때까지 저절로 가져오지 않음
+    private var orchardLink: me.kavishdevar.librepods.link.OrchardLink? = null
+    @Volatile private var linkSuppressTakeoverUntil = 0L
 
     data class ServiceConfig(
         var deviceName: String = "AirPods",
@@ -459,6 +462,14 @@ class AirPodsService : Service(), SharedPreferences.OnSharedPreferenceChangeList
 
         bleManager = BLEManager(this)
         bleManager.setAirPodsStatusListener(bleStatusListener)
+
+        // Orchard Link: PC와 전환 신호 주고받기(와이파이 UDP 47820 + BLE 0xFFFF)
+        runCatching {
+            val link = me.kavishdevar.librepods.link.OrchardLink.get(this)
+            link.start(linkHost)
+            orchardLink = link
+            bleManager.linkDataListener = { link.onBleData(it) }
+        }.onFailure { Log.e(TAG, "Orchard Link start failed", it) }
 
         sharedPreferences = getSharedPreferences("settings", MODE_PRIVATE)
 
@@ -2385,8 +2396,20 @@ class AirPodsService : Service(), SharedPreferences.OnSharedPreferenceChangeList
     fun takeOver(
         takingOverFor: String,
         manualTakeOverAfterReversed: Boolean = false,
-        startHeadTrackingAgain: Boolean = false
+        startHeadTrackingAgain: Boolean = false,
+        // Orchard Link: PC에 먼저 물어본 뒤 다시 들어올 때 true(같은 단계를 또 하지 않게)
+        afterLink: Boolean = false,
     ) {
+        if (!afterLink && (takingOverFor == "music" || takingOverFor == "call")) {
+            if (!manualTakeOverAfterReversed && System.currentTimeMillis() < linkSuppressTakeoverUntil) {
+                Log.d(TAG, "Orchard Link: just handed AirPods to a PC, not taking over for 5s")
+                return
+            }
+            if (shouldAskLinkFirst(takingOverFor, manualTakeOverAfterReversed)) {
+                askLinkThenTakeOver(takingOverFor, manualTakeOverAfterReversed, startHeadTrackingAgain)
+                return
+            }
+        }
         if (takingOverFor == "reverse") {
             aacpManager.sendControlCommand(
                 AACPManager.Companion.ControlCommandIdentifiers.OWNS_CONNECTION.value, 1
@@ -2989,6 +3012,80 @@ class AirPodsService : Service(), SharedPreferences.OnSharedPreferenceChangeList
         }
     }
 
+    /** Orchard Link: PC가 WANT를 보냈을 때 이 폰이 하는 일(넘겨주는 쪽). */
+    private val linkHost = object : me.kavishdevar.librepods.link.OrchardLink.Host {
+        override fun audioHere(): Boolean = runCatching { audioOnThisPhone() }.getOrDefault(false)
+
+        override fun releaseAudio(peerName: String) {
+            Log.d(TAG, "Orchard Link: handing AirPods to $peerName")
+            // 넘겨준 직후 이 폰이 다시 낚아채지 않게 5초 동안 저절로 가져오지 않는다
+            linkSuppressTakeoverUntil = System.currentTimeMillis() + 5_000
+            runCatching {
+                MediaController.sendPause(force = true)
+                // 귀에 다시 꽂거나 연결이 돌아와도 이 폰에서 저절로 다시 틀지 않게
+                MediaController.iPausedTheMedia = false
+                MediaController.pausedWhileTakingOver = false
+            }
+            disconnectAudio(this@AirPodsService, device) // 권한이 없으면 알아서 아무것도 안 한다
+        }
+    }
+
+    /** Orchard Link: 가져오기 전에 PC에 먼저 물어볼지. 짝이 없으면 언제나 false(원래 동작 그대로). */
+    private fun shouldAskLinkFirst(takingOverFor: String, manual: Boolean): Boolean {
+        val link = orchardLink ?: return false
+        if (!link.hasPeers()) return false
+        if (audioOnThisPhone()) return false // 이미 이 폰에 있으면 물어볼 것 없음
+        val status = bleManager.getMostRecentStatus()
+        // 원래 경로가 어차피 가져오지 않을 때는 묻지도, 재생을 멈추지도 않는다
+        if (status?.isLeftInEar == false && status.isRightInEar == false) return false
+        val phoneStateAllows = when (takingOverFor) {
+            "music" -> config.takeoverWhenMediaStart
+            "call" -> config.takeoverWhenRingingCall
+            else -> false
+        }
+        return manual || phoneStateAllows
+    }
+
+    /**
+     * Orchard Link: 짝 PC들에게 WANT → RELEASED면 250ms 뒤, 답이 없으면 바로 원래 가져오기.
+     * BUSY면 가져오지 않고 "○○이(가) 통화 중이라 기다릴게요" 알림.
+     */
+    @RequiresApi(Build.VERSION_CODES.R)
+    private fun askLinkThenTakeOver(takingOverFor: String, manual: Boolean, startHeadTrackingAgain: Boolean) {
+        val link = orchardLink ?: return
+        if (takingOverFor == "music") {
+            // 기다리는 동안 폰 스피커로 새지 않게 먼저 멈춘다(원래 경로도 가져오기 전에 멈춘다)
+            MediaController.pausedWhileTakingOver = true
+            MediaController.sendPause(true)
+        }
+        val reason = if (takingOverFor == "call") me.kavishdevar.librepods.link.OrchardLink.Reason.CALL
+        else me.kavishdevar.librepods.link.OrchardLink.Reason.MUSIC
+        serviceScope.launch {
+            val result = link.requestRelease(reason)
+            Log.d(TAG, "Orchard Link: requestRelease($reason) -> $result")
+            when (result) {
+                is me.kavishdevar.librepods.link.OrchardLink.Result.Busy -> {
+                    if (takingOverFor == "music") MediaController.pausedWhileTakingOver = false
+                    link.notifyPeerBusy(result.peerName)
+                    return@launch
+                }
+                me.kavishdevar.librepods.link.OrchardLink.Result.Released -> delay(250)
+                me.kavishdevar.librepods.link.OrchardLink.Result.NoAnswer -> Unit
+            }
+            withContext(Dispatchers.Main) {
+                takeOver(takingOverFor, manual, startHeadTrackingAgain, afterLink = true)
+            }
+            // 원래 경로가 가져오지 않고 끝났을 때 '가져오는 중' 표시가 남아 다음 가져오기를 막지 않게
+            if (takingOverFor == "music") {
+                delay(9_000)
+                if (MediaController.pausedWhileTakingOver && !audioOnThisPhone()) {
+                    Log.d(TAG, "Orchard Link: takeover did not happen, clearing pausedWhileTakingOver")
+                    MediaController.pausedWhileTakingOver = false
+                }
+            }
+        }
+    }
+
     /**
      * Orchard: 가져오느라 멈춘 재생을, 에어팟이 이 폰의 소리 출력이 되는 순간 이어 튼다(최대 8초 기다림).
      * 원본은 권한 있는 폰에서만 바로 이어 틀어서, 일반 폰에서는 가져온 뒤 재생이 멈춰 있었다.
@@ -3140,6 +3237,12 @@ class AirPodsService : Service(), SharedPreferences.OnSharedPreferenceChangeList
             bleManager.stopScanning()
         } catch (e: Exception) {
             e.printStackTrace()
+        }
+        // Orchard Link: 소켓·HELLO 멈춤(다시 시작하면 서비스가 새로 연다)
+        runCatching {
+            bleManager.linkDataListener = null
+            orchardLink?.stop()
+            orchardLink = null
         }
         if (checkSelfPermission("android.permission.READ_PHONE_STATE") == PackageManager.PERMISSION_GRANTED) {
             telephonyManager.unregisterTelephonyCallback(phoneStateListener)

@@ -77,6 +77,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        if (savedInstanceState == null) handleOrchardPairLink(intent)
 
         setContent {
             val sharedPreferences = LocalContext.current.getSharedPreferences("settings", MODE_PRIVATE)
@@ -105,6 +106,18 @@ class MainActivity : ComponentActivity() {
                 Main()
             }
         }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        handleOrchardPairLink(intent)
+    }
+
+    /** Orchard Link: 카메라 앱이 PC의 QR(orchard://pair?…)로 열어 주면 바로 짝짓기(결과는 토스트로). */
+    private fun handleOrchardPairLink(intent: Intent?) {
+        val data = intent?.data ?: return
+        if (data.scheme != "orchard" || data.host != "pair") return
+        me.kavishdevar.librepods.link.LinkPairing.start(this, data.toString(), toast = true)
     }
 
     override fun onDestroy() {

@@ -173,6 +173,8 @@ dependencies {
     implementation(libs.androidx.navigation3.runtime)
     implementation(libs.androidx.lifecycle.viewmodel.navigation3)
     implementation(libs.androidx.navigationevent)
+    // Orchard Link: PC 짝짓기 QR 스캐너
+    implementation(libs.zxing.android.embedded)
 }
 
 aboutLibraries {

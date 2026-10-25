@@ -22,6 +22,8 @@ public sealed class AirPodsMonitor : IDisposable
 
     /// <summary>상태가 바뀌거나 사라질 때(null). 백그라운드 스레드에서 온다.</summary>
     public event Action<AirPodsStatus?, PairedDevice?>? Changed;
+    /// <summary>BLE로 온 전환 신호(회사 번호 0xFFFF). 백그라운드 스레드에서 온다.</summary>
+    public event Action<byte[]>? LinkSignal;
 
     public PairedDevice? ConnectedDevice { get; private set; }
     public AirPodsStatus? Current => _last;
@@ -89,6 +91,14 @@ public sealed class AirPodsMonitor : IDisposable
     {
         foreach (var md in e.Advertisement.ManufacturerData)
         {
+            // 폰이 보낸 전환 신호(shared/link.md)
+            if (md.CompanyId == LinkPacket.BleCompanyId && md.Data.Length == LinkPacket.MinLength)
+            {
+                var raw = new byte[md.Data.Length];
+                DataReader.FromBuffer(md.Data).ReadBytes(raw);
+                if (raw[0] == LinkPacket.Magic) LinkSignal?.Invoke(raw);
+                continue;
+            }
             if (md.CompanyId != ProximityParser.AppleCompanyId || md.Data.Length < 11) continue;
             var bytes = new byte[md.Data.Length];
             DataReader.FromBuffer(md.Data).ReadBytes(bytes);
