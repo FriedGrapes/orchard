@@ -64,36 +64,36 @@ class LidCardTest {
                     Modifier.padding(top = 28.dp, start = 10.dp, end = 10.dp).graphicsLayer {
                         val p = progress.value
                         transformOrigin = TransformOrigin(0.5f, 0f)
-                        translationY = (1f - p) * -(300.dp.toPx())
-                        val s = 0.9f + 0.1f * p
+                        translationY = (1f - p) * -(280.dp.toPx())
+                        val s = LidCardSpec.EnterScale + (1f - LidCardSpec.EnterScale) * p.coerceAtMost(1f)
                         scaleX = s; scaleY = s
-                        alpha = (p * 1.6f).coerceIn(0f, 1f)
+                        alpha = (p * 2f).coerceIn(0f, 1f)
                     }
                 )
             }
         }
         var now = 0L
-        for (t in listOf(0L, 60L, 120L, 200L, 320L, 480L, 1400L)) {
+        for (t in listOf(0L, 40L, 80L, 120L, 180L, 260L, 1400L)) {
             compose.mainClock.advanceTimeBy(t - now); now = t
             compose.onRoot().captureRoboImage("build/screenshots/lid/${tag}_in_%04d.png".format(t))
         }
         visible = false
         now = 0L
-        for (t in listOf(60L, 140L, 220L, 300L)) {
+        for (t in listOf(40L, 80L, 140L, 200L)) {
             compose.mainClock.advanceTimeBy(t - now); now = t
             compose.onRoot().captureRoboImage("build/screenshots/lid/${tag}_out_%04d.png".format(t))
         }
     }
 
     @Test fun pods5() = frames("pods5") { m ->
-        LidCardContent("규민의 AirPods", AirPodsModels.getModelByModelNumber("A3440"), pods, {}, m)
+        LidCardContent("규민의 AirPods", AirPodsModels.getModelByModelNumber("A3440"), pods, m)
     }
 
     @Test fun max2() = frames("max2") { m ->
         LidCardContent(
             "AirPods Max", AirPodsMax2(),
             listOf(Battery(BatteryComponent.LEFT, 64, BatteryStatus.NOT_CHARGING), Battery(BatteryComponent.RIGHT, 64, BatteryStatus.NOT_CHARGING)),
-            {}, m
+            m
         )
     }
 }

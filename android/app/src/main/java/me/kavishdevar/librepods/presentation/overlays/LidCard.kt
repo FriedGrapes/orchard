@@ -11,6 +11,7 @@ import android.os.Looper
 import android.provider.Settings
 import android.util.Log
 import android.view.Gravity
+import android.view.MotionEvent
 import android.view.WindowInsets
 import android.view.WindowManager
 import androidx.compose.animation.core.Animatable
@@ -18,14 +19,13 @@ import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -36,11 +36,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -50,10 +50,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.LocalDensity
@@ -87,28 +87,30 @@ import me.kavishdevar.librepods.presentation.theme.OrchardFont
 
 /**
  * Orchard: 케이스 뚜껑을 열면 화면 위에서 내려오는 배터리 카드.
- * 윈도우 앱(UI/PopupWindow.xaml)과 같은 모양·수치를 쓴다 — 순검정 카드, 연속 곡률 모서리, 같은 여백.
+ * 윈도우 앱(UI/PopupWindow.xaml)과 같은 색·모서리(순검정, 연속 곡률)를 쓰고,
+ * 폰에서는 애플 카드처럼 낮게(닫기 단추 없이, 바깥을 누르면 닫힘) — v0.2.3.
  */
 object LidCardSpec {
-    val Radius = 30.dp
+    val Radius = 28.dp
     val Width = 380.dp
-    val PadH = 20.dp
-    val PadTop = 16.dp
-    val PadBottom = 22.dp
-    val ArtHeight = 140.dp
-    val Ring = 52.dp
-    val RingStroke = 4.5.dp
+    val PadH = 18.dp
+    val PadTop = 12.dp
+    val PadBottom = 14.dp
+    val ArtHeight = 96.dp
+    val Ring = 42.dp
+    val RingStroke = 3.5.dp
     val Bg = Color(0xFF000000)
     val Fg = Color(0xFFFFFFFF)
     val Fg2 = Color(0xFF8E8E93)
     val Hairline = Color.White.copy(alpha = 0.09f)
     val Track = Color.White.copy(alpha = 0.14f)
-    val CloseBg = Color(0xFF1C1C1E)
-    // 움직임: 살짝 튀며 내려오고(스프링), 닫을 때는 빠르게 위로 빨려 올라간다
-    const val EnterDamping = 0.8f
-    const val EnterStiffness = 300f
-    const val ExitMs = 280
-    val ExitEasing = CubicBezierEasing(0.4f, 0f, 0.8f, 0.2f)
+    // 움직임: 빠르게 미끄러져 내려와 튀지 않고 자리 잡고(거의 임계 감쇠 스프링),
+    // 닫을 때는 처음부터 속도를 내 위로 부드럽게 빠진다(강한 ease-out — 시작이 굼뜨지 않게)
+    const val EnterDamping = 0.88f
+    const val EnterStiffness = 650f
+    const val ExitMs = 200
+    val ExitEasing = CubicBezierEasing(0.23f, 1f, 0.32f, 1f)
+    const val EnterScale = 0.96f
 }
 
 /** 카드 내용(창과 떼어 두어 화면 시험에서도 그린다). */
@@ -117,7 +119,6 @@ fun LidCardContent(
     name: String,
     model: AirPodsBase?,
     battery: List<Battery>,
-    onClose: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val shape = ContinuousRoundedShape(LidCardSpec.Radius)
@@ -135,17 +136,14 @@ fun LidCardContent(
             .border(0.5.dp, LidCardSpec.Hairline, shape)
             .padding(start = LidCardSpec.PadH, end = LidCardSpec.PadH, top = LidCardSpec.PadTop, bottom = LidCardSpec.PadBottom)
     ) {
-        Box(Modifier.fillMaxWidth().height(30.dp)) {
-            Text(
-                text = name,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.align(Alignment.Center).padding(horizontal = 40.dp),
-                style = TextStyle(fontFamily = OrchardFont, fontWeight = FontWeight.SemiBold, fontSize = 17.sp, color = LidCardSpec.Fg)
-            )
-            CloseButton(onClose, Modifier.align(Alignment.CenterEnd))
-        }
+        Text(
+            text = name,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp),
+            style = TextStyle(fontFamily = OrchardFont, fontWeight = FontWeight.SemiBold, fontSize = 15.sp, color = LidCardSpec.Fg)
+        )
 
         // 기기 그림 — 카드가 내려온 뒤 살짝 떠오르며
         val appear = remember { Animatable(0f) }
@@ -157,20 +155,20 @@ fun LidCardContent(
             model = model,
             height = LidCardSpec.ArtHeight,
             modifier = Modifier
-                .padding(top = 10.dp)
+                .padding(top = 6.dp)
                 .graphicsLayer {
                     alpha = appear.value
                     val s = 0.94f + 0.06f * appear.value
                     scaleX = s; scaleY = s
-                    translationY = (1f - appear.value) * 10.dp.toPx()
+                    translationY = (1f - appear.value) * 8.dp.toPx()
                 },
         )
-        Spacer(Modifier.height(14.dp))
+        Spacer(Modifier.height(10.dp))
         @Composable
         fun Cell(b: Battery?, label: String, delayMs: Long) = RingCell(
             b?.level, charging(b), label,
             size = LidCardSpec.Ring, stroke = LidCardSpec.RingStroke, delayMs = delayMs,
-            textColor = LidCardSpec.Fg, trackColor = LidCardSpec.Track, labelSize = 12,
+            textColor = LidCardSpec.Fg, trackColor = LidCardSpec.Track, labelSize = 11,
         )
         if (isHeadphones) {
             val b = level(BatteryComponent.LEFT) ?: level(BatteryComponent.RIGHT)
@@ -187,33 +185,9 @@ fun LidCardContent(
     }
 }
 
-/** 애플 카드의 동그란 닫기 단추. 누르면 살짝 작아진다. */
-@Composable
-private fun CloseButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
-    val source = remember { MutableInteractionSource() }
-    val pressed by source.collectIsPressedAsState()
-    val scale = remember { Animatable(1f) }
-    LaunchedEffect(pressed) { scale.animateTo(if (pressed) 0.9f else 1f, tween(140)) }
-    Box(
-        modifier
-            .size(30.dp)
-            .graphicsLayer { scaleX = scale.value; scaleY = scale.value }
-            .clip(CircleShape)
-            .background(LidCardSpec.CloseBg)
-            .clickable(interactionSource = source, indication = null, onClick = onClick),
-        contentAlignment = Alignment.Center
-    ) {
-        Canvas(Modifier.size(10.dp)) {
-            val w = 1.8.dp.toPx()
-            drawLine(LidCardSpec.Fg2, androidx.compose.ui.geometry.Offset(0f, 0f), androidx.compose.ui.geometry.Offset(size.width, size.height), w, StrokeCap.Round)
-            drawLine(LidCardSpec.Fg2, androidx.compose.ui.geometry.Offset(size.width, 0f), androidx.compose.ui.geometry.Offset(0f, size.height), w, StrokeCap.Round)
-        }
-    }
-}
-
 /**
- * 화면 맨 위에 뜨는 창. 스프링으로 내려오고, 닫을 때는 위로 빠르게 빨려 올라간다.
- * 위로 밀어도 닫히고, 누르면 앱이 열린다. 뚜껑을 닫거나 10초가 지나면 저절로 닫힌다.
+ * 화면 맨 위에 뜨는 창. 스프링으로 내려오고, 닫을 때는 위로 빠르게 빠진다.
+ * 카드 바깥을 누르거나 위로 밀면 닫히고, 카드를 누르면 앱이 열린다. 뚜껑을 닫거나 10초가 지나면 저절로 닫힌다.
  */
 @SuppressLint("ClickableViewAccessibility")
 class LidCardWindow(private val context: Context, private val onOpenApp: () -> Unit = {}) {
@@ -245,12 +219,19 @@ class LidCardWindow(private val context: Context, private val onOpenApp: () -> U
             setViewTreeLifecycleOwner(o)
             setViewTreeSavedStateRegistryOwner(o)
             setContent { Animated(topInset) }
+            setOnTouchListener { _, e ->
+                if (e.actionMasked == MotionEvent.ACTION_OUTSIDE) dismiss()
+                false
+            }
         }
         val params = WindowManager.LayoutParams(
             WindowManager.LayoutParams.MATCH_PARENT,
             WindowManager.LayoutParams.WRAP_CONTENT,
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+                // 카드 바깥을 누르면 ACTION_OUTSIDE 를 받아 닫는다(그 누름은 아래 앱에 그대로 간다)
+                WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
+                WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH or
                 WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
                 WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
             PixelFormat.TRANSLUCENT
@@ -311,7 +292,9 @@ class LidCardWindow(private val context: Context, private val onOpenApp: () -> U
         val progress = remember { Animatable(0f) }  // 0 = 화면 밖, 1 = 제자리
         val drag = remember { Animatable(0f) }
         val scope = rememberCoroutineScope()
-        val travel = with(density) { (topInset + 260.dp.roundToPx()).toFloat() }
+        // 카드 높이만큼만 올라가면 화면 밖이다 — 거리가 짧을수록 같은 시간에 더 부드럽게 보인다
+        var cardH by remember { mutableIntStateOf(with(density) { 240.dp.roundToPx() }) }
+        val travel = with(density) { (topInset + 8.dp.roundToPx() + cardH + 24.dp.roundToPx()).toFloat() }
 
         LaunchedEffect(visible) {
             if (visible) {
@@ -327,13 +310,15 @@ class LidCardWindow(private val context: Context, private val onOpenApp: () -> U
         Box(
             Modifier
                 .fillMaxWidth()
+                // 창 안이지만 카드 옆·아래 빈자리를 눌러도 바깥으로 본다
+                .pointerInput(Unit) { detectTapGestures { dismiss() } }
                 .padding(top = with(density) { topInset.toDp() } + 8.dp, start = 10.dp, end = 10.dp, bottom = 28.dp),
             contentAlignment = Alignment.TopCenter
         ) {
             LidCardContent(
                 name = name, model = model, battery = battery,
-                onClose = { dismiss() },
                 modifier = Modifier
+                    .onSizeChanged { if (it.height > 0) cardH = it.height }
                     .graphicsLayer {
                         val p = progress.value
                         transformOrigin = TransformOrigin(0.5f, 0f)
@@ -341,9 +326,9 @@ class LidCardWindow(private val context: Context, private val onOpenApp: () -> U
                             alpha = p.coerceIn(0f, 1f)
                         } else {
                             translationY = (1f - p) * -travel + drag.value
-                            val s = 0.9f + 0.1f * p
+                            val s = LidCardSpec.EnterScale + (1f - LidCardSpec.EnterScale) * p.coerceAtMost(1f)
                             scaleX = s; scaleY = s
-                            alpha = (p * 1.6f).coerceIn(0f, 1f)
+                            alpha = (p * 2f).coerceIn(0f, 1f)
                         }
                     }
                     .pointerInput(Unit) {

@@ -145,6 +145,7 @@ class QuickSettingsDialogActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        expandIfFromTile(intent)
         window.addFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL)
         window.addFlags(WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH)
         window.addFlags(WindowManager.LayoutParams.FLAG_BLUR_BEHIND)
@@ -176,6 +177,18 @@ class QuickSettingsDialogActivity : ComponentActivity() {
                     }
                 }
             }
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        expandIfFromTile(intent)
+    }
+
+    /** Orchard: 타일을 꾹 눌러 열었으면 소음 제어 모드 고르기를 바로 펼친다. */
+    private fun expandIfFromTile(intent: Intent?) {
+        if (intent?.action == android.service.quicksettings.TileService.ACTION_QS_TILE_PREFERENCES) {
+            isNoiseControlExpandedState = true
         }
     }
 

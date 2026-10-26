@@ -125,12 +125,16 @@
 
         <activity
             android:name=".QuickSettingsDialogActivity"
-            android:exported="false"
+            android:exported="true"
             android:theme="@style/Theme.TransparentDialog"
             android:launchMode="singleTask"
             android:excludeFromRecents="true"
-            android:taskAffinity=""
-             />
+            android:taskAffinity="">
+            <!-- Orchard: 빠른 설정 'ANC' 타일을 꾹 누르면 애플 제어 센터처럼 모드 고르기를 펼친 채로 연다 -->
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE_PREFERENCES" />
+            </intent-filter>
+        </activity>
 
         <service
             android:name=".services.AirPodsService"

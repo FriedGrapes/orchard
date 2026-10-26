@@ -57,6 +57,8 @@ class BLEManager(private val context: Context) {
         val isRightCharging: Boolean = false,
         val isCaseCharging: Boolean = false,
         val lidOpen: Boolean = false,
+        /** 이 광고를 보낸 알맹이가 케이스 안에 있음(뚜껑 비트는 이때만 믿을 수 있다). */
+        val inCase: Boolean = false,
         val color: String = "Unknown",
         val connectionState: String = "Unknown"
     )
@@ -80,7 +82,7 @@ class BLEManager(private val context: Context) {
     private val deviceStatusMap = mutableMapOf<String, AirPodsStatus>()
     private val verifiedAddresses = mutableSetOf<String>()
     private val sharedPreferences: SharedPreferences = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
-    private var currentGlobalLidState: Boolean? = null
+    private val lidTracker = LidTracker()
     private var lastBroadcastTime: Long = 0
     private val processedAddresses = mutableSetOf<String>()
 
@@ -308,29 +310,27 @@ class BLEManager(private val context: Context) {
             val previousStatus = deviceStatusMap[address]
             deviceStatusMap[address] = parsedStatus
 
+            // Orchard: 뚜껑은 주소와 상관없이 하나로 판정한다(주소가 바뀌거나 잠깐 끊겨도 다시 띄우지 않게)
+            val caseOpen = LidTracker.caseOpen(
+                lidBitOpen = parsedStatus.lidOpen,
+                broadcasterInCase = parsedStatus.inCase,
+                podCharging = parsedStatus.isLeftCharging || parsedStatus.isRightCharging,
+                headphones = parsedStatus.model.contains("Max"),
+            )
+            when (lidTracker.onBroadcast(caseOpen, System.currentTimeMillis())) {
+                LidTracker.Event.OPEN -> { Log.d(TAG, "Lid opened (pods in case)"); airPodsStatusListener?.onLidStateChanged(true) }
+                LidTracker.Event.CLOSE -> { Log.d(TAG, "Lid closed"); airPodsStatusListener?.onLidStateChanged(false) }
+                null -> {}
+            }
+
             airPodsStatusListener?.let { listener ->
                 if (previousStatus == null) {
                     listener.onBroadcastFromNewAddress(parsedStatus)
                     Log.d(TAG, "New AirPods device detected: $address")
 
-                    if (currentGlobalLidState == null || currentGlobalLidState != parsedStatus.lidOpen) {
-                        currentGlobalLidState = parsedStatus.lidOpen
-                        listener.onLidStateChanged(parsedStatus.lidOpen)
-                        Log.d(TAG, "Lid state ${if (parsedStatus.lidOpen) "opened" else "closed"} (detected from new device)")
-                    }
                 } else {
                     if (parsedStatus != previousStatus) {
                         listener.onDeviceStatusChanged(parsedStatus, previousStatus)
-                    }
-
-                    if (parsedStatus.lidOpen != previousStatus.lidOpen) {
-                        val previousGlobalState = currentGlobalLidState
-                        currentGlobalLidState = parsedStatus.lidOpen
-
-                        if (previousGlobalState != parsedStatus.lidOpen) {
-                            listener.onLidStateChanged(parsedStatus.lidOpen)
-                            Log.d(TAG, "Lid state changed from $previousGlobalState to ${parsedStatus.lidOpen}")
-                        }
                     }
 
                     if (parsedStatus.isLeftInEar != previousStatus.isLeftInEar ||
@@ -408,6 +408,7 @@ class BLEManager(private val context: Context) {
             isRightCharging = isRightCharging,
             isCaseCharging = isCaseCharging,
             lidOpen = lidOpen,
+            inCase = thisInCase,
             color = color,
             connectionState = conn
         )
@@ -431,10 +432,8 @@ class BLEManager(private val context: Context) {
     }
 
     private fun checkLidStateTimeout() {
-        val currentTime = System.currentTimeMillis()
-        if (currentTime - lastBroadcastTime > LID_CLOSE_TIMEOUT_MS && currentGlobalLidState == true) {
-            Log.d(TAG, "No broadcasts for ${LID_CLOSE_TIMEOUT_MS}ms, forcing lid state to closed")
-            currentGlobalLidState = false
+        if (lidTracker.onTick(System.currentTimeMillis()) == LidTracker.Event.CLOSE) {
+            Log.d(TAG, "No broadcasts for ${LidTracker.CLOSE_TIMEOUT_MS}ms, closing lid card")
             airPodsStatusListener?.onLidStateChanged(false)
         }
     }
@@ -508,6 +507,7 @@ class BLEManager(private val context: Context) {
             isRightCharging = isRightCharging,
             isCaseCharging = isCaseCharging,
             lidOpen = lidOpen,
+            inCase = thisInCase,
             color = color,
             connectionState = conn
         )
@@ -517,6 +517,5 @@ class BLEManager(private val context: Context) {
         private const val TAG = "AirPodsBLE"
         private const val CLEANUP_INTERVAL_MS = 10000L
         private const val STALE_DEVICE_TIMEOUT_MS = 15000L
-        private const val LID_CLOSE_TIMEOUT_MS = 2500L
     }
 }
