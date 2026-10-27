@@ -52,6 +52,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -75,6 +76,8 @@ import me.kavishdevar.librepods.data.Battery
 import me.kavishdevar.librepods.data.NoiseControlMode
 import me.kavishdevar.librepods.presentation.components.ControlCenterSheetContent
 import me.kavishdevar.librepods.presentation.components.ControlCenterSpec
+import me.kavishdevar.librepods.presentation.components.LocalRichMotion
+import me.kavishdevar.librepods.presentation.components.LocalSheetPull
 import me.kavishdevar.librepods.presentation.theme.LibrePodsTheme
 import me.kavishdevar.librepods.services.AirPodsService
 import kotlin.io.encoding.ExperimentalEncodingApi
@@ -204,7 +207,10 @@ fun ControlCenterSheetHost(onDismiss: () -> Unit, content: @Composable () -> Uni
                 },
             contentAlignment = Alignment.BottomCenter
         ) {
-            content()
+            // 끄는 거리는 사진 그네 흔들림에, 동작 줄이기면 꾸밈 움직임을 모두 끈다
+            CompositionLocalProvider(LocalSheetPull provides { drag.value }, LocalRichMotion provides !reduceMotion) {
+                content()
+            }
         }
     }
 }
@@ -285,6 +291,7 @@ fun NewControlCenterDialogContent(service: AirPodsService) {
             }
         },
         onVolumeDrag = { },
+        volumeSteps = maxVolume,
         modes = availableModes,
         selected = currentAncMode,
         onSelect = { m ->

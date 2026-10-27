@@ -317,4 +317,7 @@
     <string name="orchard_mode_transparency">주변음</string>
     <string name="orchard_mode_adaptive">적응형</string>
     <string name="orchard_mode_anc">소음 차단</string>
+    <string name="orchard_cc_status_transparency">주변음 허용 중</string>
+    <string name="orchard_cc_status_adaptive">주변에 맞춰 조절 중</string>
+    <string name="orchard_cc_status_anc">소음 차단 켜짐</string>
 </resources>

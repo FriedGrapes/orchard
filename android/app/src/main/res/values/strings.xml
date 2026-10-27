@@ -327,4 +327,7 @@
     <string name="orchard_mode_transparency">Transparency</string>
     <string name="orchard_mode_adaptive">Adaptive</string>
     <string name="orchard_mode_anc">Noise Cancel</string>
+    <string name="orchard_cc_status_transparency">Hearing your surroundings</string>
+    <string name="orchard_cc_status_adaptive">Adjusting to your surroundings</string>
+    <string name="orchard_cc_status_anc">Noise cancellation on</string>
 </resources>

@@ -36,7 +36,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
-/** Orchard v0.2.4: ANC 타일 제어 센터 카드(시안 A) — 올라오기·모드 바꾸기·배터리 바뀜을 시간대별로 찍는다(뒤는 일부러 글자 많은 앱). */
+/** Orchard v0.2.4~0.2.5: ANC 타일 제어 센터 카드(시안 A + 킥) — 올라오기·모드 바꾸기(물결·빛 알갱이·모드 빛)·배터리 바뀜을 시간대별로 찍는다(뒤는 일부러 글자 많은 앱). */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(sdk = [35], qualifiers = "w411dp-h891dp-night-xxhdpi")
@@ -72,6 +72,7 @@ class ControlCenterSheetTest {
                             model = AirPodsModels.getModelByModelNumber("A3048"),
                             battery = battery,
                             volumeFraction = vol,
+                            volumeSteps = 15,
                             onVolumeFraction = { vol = it },
                             onVolumeDrag = {},
                             modes = modes,
@@ -92,6 +93,12 @@ class ControlCenterSheetTest {
         for (t in listOf(60L, 140L, 260L, 800L)) {
             compose.mainClock.advanceTimeBy(t - now); now = t
             compose.onRoot().captureRoboImage("build/screenshots/cc/${tag}_anc_%04d.png".format(t))
+        }
+        mode = NoiseControlMode.TRANSPARENCY
+        now = 0L
+        for (t in listOf(200L, 500L, 900L, 1800L)) {
+            compose.mainClock.advanceTimeBy(t - now); now = t
+            compose.onRoot().captureRoboImage("build/screenshots/cc/${tag}_tra_%04d.png".format(t))
         }
         mode = NoiseControlMode.OFF
         battery = listOf(
