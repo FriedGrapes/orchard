@@ -312,4 +312,9 @@
     <string name="orchard_link_remove_title">%1$s 연결을 끊을까요?</string>
     <string name="orchard_link_remove_desc">다시 QR을 찍기 전까지 이 PC와는 에어팟을 주고받지 않아요.</string>
     <string name="orchard_link_cancel">취소</string>
+    <string name="orchard_volume">볼륨</string>
+    <string name="orchard_mode_off">끔</string>
+    <string name="orchard_mode_transparency">주변음</string>
+    <string name="orchard_mode_adaptive">적응형</string>
+    <string name="orchard_mode_anc">소음 차단</string>
 </resources>

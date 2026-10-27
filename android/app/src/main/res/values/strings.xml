@@ -322,4 +322,9 @@
     <string name="orchard_link_remove_title">Remove %1$s?</string>
     <string name="orchard_link_remove_desc">AirPods won\'t hand off with this PC until you scan its QR code again.</string>
     <string name="orchard_link_cancel">Cancel</string>
+    <string name="orchard_volume">Volume</string>
+    <string name="orchard_mode_off">Off</string>
+    <string name="orchard_mode_transparency">Transparency</string>
+    <string name="orchard_mode_adaptive">Adaptive</string>
+    <string name="orchard_mode_anc">Noise Cancel</string>
 </resources>

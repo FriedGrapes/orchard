@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Orchard: '끔' 모드 — 다른 모드 그림과 같은 사람 모양에서 둘레 표시를 뺀 것(예전엔 소음 차단 그림을 같이 써서 헷갈렸음) -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp" android:height="24dp"
+    android:viewportWidth="200" android:viewportHeight="200">
+    <path android:fillColor="#FFFFFFFF"
+        android:pathData="M100,42 C118,42 130,58 130,80 C130,102 118,118 100,118 C82,118 70,102 70,80 C70,58 82,42 100,42 Z"/>
+    <path android:fillColor="#FFFFFFFF"
+        android:pathData="M42,166 C44,138 68,124 100,124 C132,124 156,138 158,166 Z"/>
+</vector>
