@@ -90,12 +90,15 @@ fun PermissionsPage(
 
 
     val bluetoothPermissionsState = rememberMultiplePermissionsState(
-        listOf(
-            "android.permission.BLUETOOTH_CONNECT",
-            "android.permission.BLUETOOTH_SCAN",
-            "android.permission.BLUETOOTH",
-            "android.permission.BLUETOOTH_ADMIN",
-            "android.permission.BLUETOOTH_ADVERTISE"
+        // Orchard: 안드로이드 17부터는 PC와 와이파이로 주고받는 데 '로컬 네트워크' 권한도 필요(같은 '근처 기기' 묶음)
+        me.kavishdevar.librepods.link.LocalNetworkPermission.withIfNeeded(
+            listOf(
+                "android.permission.BLUETOOTH_CONNECT",
+                "android.permission.BLUETOOTH_SCAN",
+                "android.permission.BLUETOOTH",
+                "android.permission.BLUETOOTH_ADMIN",
+                "android.permission.BLUETOOTH_ADVERTISE"
+            )
         )
     ) {
         if (grantingAll) {

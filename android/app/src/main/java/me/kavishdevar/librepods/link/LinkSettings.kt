@@ -5,6 +5,7 @@ import android.os.Handler
 import android.os.Looper
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
@@ -111,18 +112,34 @@ fun LinkSettingsSection() {
         // 취소하면 contents 가 null — 아무것도 바꾸지 않는다
         result.contents?.let { LinkPairing.start(context, it) }
     }
+    // Orchard 0.2.7: 안드로이드 17부터 '로컬 네트워크' 권한이 없으면 PC와 와이파이로 못 주고받는다(블루투스로만 감)
+    var localNetOk by remember { mutableStateOf(LocalNetworkPermission.granted(context)) }
+    var scanAfterAsk by remember { mutableStateOf(false) }
+    val scan = {
+        scanner.launch(
+            ScanOptions()
+                .setDesiredBarcodeFormats(ScanOptions.QR_CODE)
+                .setPrompt(prompt)
+                .setBeepEnabled(false)
+                .setOrientationLocked(false)
+        )
+    }
+    val askLocalNet = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { ok ->
+        localNetOk = ok
+        if (scanAfterAsk) { scanAfterAsk = false; scan() } // 거절해도 짝짓기는 된다(블루투스로)
+    }
+    // 이미 짝이 있는데 권한이 없으면(0.2.6 이전에 짝지은 사용자) 화면을 열 때 한 번 묻는다
+    LaunchedEffect(Unit) {
+        if (!localNetOk && peers.isNotEmpty()) askLocalNet.launch(LocalNetworkPermission.NAME)
+    }
     LinkSettingsContent(
         peers = peers,
         status = status,
+        needsLocalNetwork = !localNetOk,
         onScan = {
-            scanner.launch(
-                ScanOptions()
-                    .setDesiredBarcodeFormats(ScanOptions.QR_CODE)
-                    .setPrompt(prompt)
-                    .setBeepEnabled(false)
-                    .setOrientationLocked(false)
-            )
+            if (!localNetOk) { scanAfterAsk = true; askLocalNet.launch(LocalNetworkPermission.NAME) } else scan()
         },
+        onAllowLocalNetwork = { askLocalNet.launch(LocalNetworkPermission.NAME) },
         onRemove = { OrchardLink.get(context).removePeer(it.id) },
     )
 }
@@ -133,7 +150,9 @@ fun LinkSettingsContent(
     peers: List<LinkPeer>,
     status: PairStatus,
     nowMs: Long = System.currentTimeMillis(),
+    needsLocalNetwork: Boolean = false,
     onScan: () -> Unit = {},
+    onAllowLocalNetwork: () -> Unit = {},
     onRemove: (LinkPeer) -> Unit = {},
 ) {
     val context = LocalContext.current
@@ -173,6 +192,15 @@ fun LinkSettingsContent(
                 }
             },
         )
+        if (needsLocalNetwork && peers.isNotEmpty()) {
+            StyledListItem(
+                modifier = Modifier.pressScale(),
+                name = stringResource(R.string.orchard_link_local_net),
+                description = stringResource(R.string.orchard_link_local_net_desc),
+                onClick = onAllowLocalNetwork,
+                orientation = me.kavishdevar.librepods.presentation.components.ListItemOrientation.Vertical,
+            )
+        }
         peers.forEachIndexed { i, peer ->
             StyledListItem(
                 modifier = Modifier.springEntrance(i),

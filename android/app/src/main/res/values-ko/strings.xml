@@ -305,6 +305,8 @@
     <string name="orchard_link_seen_min">%1$d분 전</string>
     <string name="orchard_link_seen_hour">%1$d시간 전</string>
     <string name="orchard_link_seen_day">%1$d일 전</string>
+    <string name="orchard_link_local_net">와이파이로 더 빠르게</string>
+    <string name="orchard_link_local_net_desc">근처 기기 권한을 허용하면 PC와 와이파이로 바로 주고받아요. 지금은 블루투스로만 전해져 느릴 수 있어요</string>
     <string name="orchard_link_never">아직 신호 없음</string>
     <string name="orchard_link_via_wifi">와이파이</string>
     <string name="orchard_link_via_ble">블루투스</string>

@@ -315,6 +315,8 @@
     <string name="orchard_link_seen_min">%1$d min ago</string>
     <string name="orchard_link_seen_hour">%1$d h ago</string>
     <string name="orchard_link_seen_day">%1$d d ago</string>
+    <string name="orchard_link_local_net">Faster over Wi-Fi</string>
+    <string name="orchard_link_local_net_desc">Allow Nearby devices so your PC can be reached over Wi-Fi. For now signals only go over Bluetooth and may be slow</string>
     <string name="orchard_link_never">No signal yet</string>
     <string name="orchard_link_via_wifi">Wi-Fi</string>
     <string name="orchard_link_via_ble">Bluetooth</string>

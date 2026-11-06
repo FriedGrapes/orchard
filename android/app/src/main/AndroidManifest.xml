@@ -45,6 +45,8 @@
     <!-- Orchard Link: PC와 같은 와이파이에서 전환 신호(UDP) 주고받기, 짝짓기 동안만 브로드캐스트 받기 -->
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <!-- Orchard: 안드로이드 17부터 같은 와이파이의 PC와 주고받는 데 필요(없으면 보내기가 EPERM) -->
+    <uses-permission android:name="android.permission.ACCESS_LOCAL_NETWORK" />
     <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE" />
     <!-- Orchard Link: 짝짓기 QR 찍기(카메라가 없는 기기에서도 설치되게) -->
     <uses-feature
