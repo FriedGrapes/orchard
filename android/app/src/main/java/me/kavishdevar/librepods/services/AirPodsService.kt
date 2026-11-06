@@ -2437,7 +2437,14 @@ class AirPodsService : Service(), SharedPreferences.OnSharedPreferenceChangeList
                     Log.d(TAG, "Orchard: no vendor hook, taking over by A2DP connect")
                     MediaController.pausedWhileTakingOver = true
                     MediaController.sendPause(true)
-                    connectAudio(this, device)
+                    if (afterLink || manualTakeOverAfterReversed) {
+                        connectAudio(this, device)
+                    } else {
+                        // Orchard 0.2.6: 멈춤 키에 안 멈추는 재생(소리 꺼진 자동 재생 등)으로는 가져오지 않는다
+                        serviceScope.launch {
+                            if (playbackObeyedPause()) withContext(Dispatchers.Main) { connectAudio(this@AirPodsService, device) }
+                        }
+                    }
                 } else {
                     Log.d(TAG, "not taking over, vendorid is probably not set to apple")
                 }
@@ -3031,6 +3038,20 @@ class AirPodsService : Service(), SharedPreferences.OnSharedPreferenceChangeList
     }
 
     /** Orchard Link: 가져오기 전에 PC에 먼저 물어볼지. 짝이 없으면 언제나 false(원래 동작 그대로). */
+    /**
+     * Orchard 0.2.6: 멈춤 키를 보낸 뒤 재생이 실제로 멈췄는지(최대 0.8초).
+     * 안 멈추면 사용자가 튼 재생이 아니다 — 0.2.5 실기에서 폰이 아무것도 안 트는데 다른 기기의 에어팟을 가져갔다.
+     */
+    private suspend fun playbackObeyedPause(): Boolean {
+        val ok = me.kavishdevar.librepods.utils.PauseProbe.stopped({ MediaController.getMusicActive() })
+        if (!ok) {
+            Log.d(TAG, "Orchard: playback ignored the pause key (muted autoplay etc.) — not a user play, not taking over")
+            MediaController.pausedWhileTakingOver = false
+            MediaController.iPausedTheMedia = false
+        }
+        return ok
+    }
+
     private fun shouldAskLinkFirst(takingOverFor: String, manual: Boolean): Boolean {
         val link = orchardLink ?: return false
         if (!link.hasPeers()) return false
@@ -3061,6 +3082,8 @@ class AirPodsService : Service(), SharedPreferences.OnSharedPreferenceChangeList
         val reason = if (takingOverFor == "call") me.kavishdevar.librepods.link.OrchardLink.Reason.CALL
         else me.kavishdevar.librepods.link.OrchardLink.Reason.MUSIC
         serviceScope.launch {
+            // Orchard 0.2.6: 사용자가 튼 재생이면 멈춤 키에 곧 멈춘다. 안 멈추면 PC에 묻지도, 가져오지도 않는다.
+            if (takingOverFor == "music" && !manual && !playbackObeyedPause()) return@launch
             val result = link.requestRelease(reason)
             Log.d(TAG, "Orchard Link: requestRelease($reason) -> $result")
             when (result) {
